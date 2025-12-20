@@ -1,0 +1,59 @@
+[project]
+name = "chirplab"
+version = "0.1.0"
+description = "Parameter estimation of gravitational-wave signals."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=2.3.5",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "ruff>=0.14.10",
+]
+
+[tool.ruff]
+line-length = 120
+lint.select = [
+    "B",        # flake8-bugbear
+    "EM",       # flake8-errmsg
+    "SIM",      # flake8-simplify
+    "I",        # isort
+    "PERF",     # Perflint
+    "E", "W",   # pycodestyle
+    "D",        # pydocstyle
+    "PLR",      # Pylint Refactor
+    "UP",       # pyupgrade
+]
+# formatting conflicts
+lint.ignore = [
+    # pycodestyle
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "E501",
+    # pydocstyle
+    "D206",
+    "D300",
+    # flake8-quotes
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    # flake8-commas
+    "COM812",
+    "COM819",
+    # flake8-implicit-str-concat
+    "ISC002",
+]
+lint.pydocstyle.convention = "numpy"
+
+[tool.mypy]
+strict = true
