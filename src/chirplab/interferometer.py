@@ -77,7 +77,8 @@ class Interferometer:
         )
         self.h_tilde = F_plus * signal.h_tilde_plus + F_cross * signal.h_tilde_cross
 
-        S_n = self.interpolate_power_spectral_density(signal.f)
+        f = signal.f[(self.f_min <= signal.f) & (signal.f <= self.f_max)]
+        S_n = self.interpolate_power_spectral_density(f)
 
         if is_zero_noise:
             self.n_tilde = numpy.zeros_like(self.h_tilde)
@@ -85,7 +86,7 @@ class Interferometer:
             if rng is None:
                 rng = numpy.random.default_rng()
 
-            self.n_tilde = S_n ** (1 / 2) * generate_white_noise(signal.f, rng)
+            self.n_tilde = S_n ** (1 / 2) * generate_white_noise(f, rng)
 
         self.d_tilde = self.h_tilde + self.n_tilde
 
