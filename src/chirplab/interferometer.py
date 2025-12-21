@@ -12,12 +12,7 @@ PWD = Path(__file__).parent
 class Interferometer:
     """Gravitational-wave interferometer."""
 
-    def __init__(
-        self,
-        amplitude_spectral_density_file: Path = PWD / "data/aligo_O4high.txt",
-        f_min: float = 20,
-        f_max: float = 2048,
-    ) -> None:
+    def __init__(self, amplitude_spectral_density_file: Path, f_min: float, f_max: float) -> None:
         self.amplitude_spectral_density_file = amplitude_spectral_density_file
         self.f_min = f_min
         self.f_max = f_max
@@ -106,3 +101,10 @@ class Interferometer:
         S_n = self.interpolate_power_spectral_density(signal.f)
         self.rho = self.calculate_inner_product(self.h_tilde, self.h_tilde, S_n, signal.Delta_f).real ** (1 / 2)
         self.rho_MF = self.calculate_inner_product(self.d_tilde, self.h_tilde, S_n, signal.Delta_f) / self.rho
+
+
+class LIGO(Interferometer):
+    """LIGO gravitational-wave interferometer."""
+
+    def __init__(self) -> None:
+        super().__init__(PWD / "data/aligo_O4high.txt", 20, 2048)
