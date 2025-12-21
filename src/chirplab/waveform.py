@@ -1,6 +1,6 @@
 """Module for gravitational-wave waveform generation."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy
 
@@ -36,13 +36,16 @@ class Parameters:
     phi: float
     psi: float
 
-    M: float = field(init=False)
-    M_chirp: float = field(init=False)
+    @property
+    def M(self) -> float:
+        """Total mass of the binary (kg)."""
+        return self.m_1 + self.m_2
 
-    def __post_init__(self) -> None:
-        """Calculate derived parameters."""
-        self.M = self.m_1 + self.m_2
-        self.M_chirp = (self.m_1 * self.m_2) ** (3 / 5) / self.M ** (1 / 5)
+    @property
+    def M_chirp(self) -> float:
+        """Chirp mass of the binary (kg)."""
+        M_chirp: float = (self.m_1 * self.m_2) ** (3 / 5) / (self.m_1 + self.m_2) ** (1 / 5)
+        return M_chirp
 
 
 class Waveform:
