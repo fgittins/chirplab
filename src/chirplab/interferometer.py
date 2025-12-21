@@ -10,7 +10,7 @@ PWD = Path(__file__).parent
 
 
 class Interferometer:
-    """Gravitational-wave interferometer class."""
+    """Gravitational-wave interferometer."""
 
     def __init__(
         self,
@@ -24,21 +24,20 @@ class Interferometer:
 
         f: numpy.typing.NDArray[numpy.float64]
         amplitude_spectral_density: numpy.typing.NDArray[numpy.float64]
-        f, amplitude_spectral_density = numpy.loadtxt(self.amplitude_spectral_density_file, numpy.float64, unpack=True)
+        f, amplitude_spectral_density = numpy.loadtxt(amplitude_spectral_density_file, numpy.float64, unpack=True)
 
-        mask = (self.f_min <= f) & (f <= self.f_max)
+        mask = (f_min <= f) & (f <= f_max)
         self.f = f[mask]
         self.S_n = amplitude_spectral_density[mask] ** 2
 
     def interpolate_power_spectral_density(
-        self,
-        f: numpy.typing.NDArray[numpy.floating],
+        self, f: numpy.typing.NDArray[numpy.floating]
     ) -> numpy.typing.NDArray[numpy.floating]:
         """
         Interpolate the noise power-spectral density at specified frequencies.
 
-        :param f: Frequencies at which to evaluate (Hz)
-        :return S_n: Interpolated values for the noise power-spectral density (Hz^-1)
+        :param f: Frequency array (Hz)
+        :return S_n: Noise power-spectral density (Hz^-1)
         """
         S_n: numpy.typing.NDArray[numpy.floating] = numpy.interp(f, self.f, self.S_n)
         return S_n
@@ -67,10 +66,10 @@ class Interferometer:
         a_tilde: numpy.typing.NDArray[numpy.complexfloating],
         b_tilde: numpy.typing.NDArray[numpy.complexfloating],
         S_n: numpy.typing.NDArray[numpy.floating],
-        delta_f: float,
-    ) -> numpy.float64:
+        Delta_f: float,
+    ) -> numpy.complex128:
         """
-        Calculate the noise-weighted inner product of two frequency-domain functions.
+        Calculate the (complex) noise-weighted inner product of two frequency-domain functions.
 
         :param a_tilde: First frequency-domain function (Hz^-1)
         :param b_tilde: Second frequency-domain function (Hz^-1)
@@ -80,20 +79,20 @@ class Interferometer:
         """
         assert a_tilde.shape == b_tilde.shape == S_n.shape, "Input arrays must have the same shape."
         integrand = (a_tilde.conj() * b_tilde) / S_n
-        integral = numpy.sum(integrand, dtype=numpy.float64) * delta_f
-        return 4 * integral.real
+        integral = numpy.sum(integrand, dtype=numpy.complex128) * Delta_f
+        return 4 * integral
 
-    def inject_signal(self, waveform: waveform.Waveform, is_zero_noise: bool = True) -> None:
+    def inject(self, signal: waveform.Waveform, is_zero_noise: bool = True) -> None:
         """
         Inject gravitational-wave signal into the interferometer.
 
-        :param waveform: Gravitational waveform
+        :param signal: Gravitational-wave signal
         :param is_zero_noise: Whether to use zero noise
         """
         F_plus, F_cross = self.calculate_pattern_functions(
-            waveform.parameters.theta, waveform.parameters.phi, waveform.parameters.psi
+            signal.parameters.theta, signal.parameters.phi, signal.parameters.psi
         )
-        self.h_tilde = F_plus * waveform.h_tilde_plus + F_cross * waveform.h_tilde_cross
+        self.h_tilde = F_plus * signal.h_tilde_plus + F_cross * signal.h_tilde_cross
 
         # TODO: add realistic noise realisation
         if is_zero_noise:
@@ -104,7 +103,6 @@ class Interferometer:
 
         self.d_tilde = self.h_tilde + self.n_tilde
 
-        S_n = self.interpolate_power_spectral_density(waveform.f)
-
-        self.rho = self.calculate_inner_product(self.h_tilde, self.h_tilde, S_n, waveform.delta_f) ** (1 / 2)
-        print(f"Optimal signal-to-noise ratio: {self.rho}")
+        S_n = self.interpolate_power_spectral_density(signal.f)
+        self.rho = self.calculate_inner_product(self.h_tilde, self.h_tilde, S_n, signal.Delta_f).real ** (1 / 2)
+        self.rho_MF = self.calculate_inner_product(self.d_tilde, self.h_tilde, S_n, signal.Delta_f) / self.rho

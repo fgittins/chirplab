@@ -1,6 +1,6 @@
 """Module for gravitational-wave waveform generation."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy
 
@@ -13,43 +13,57 @@ class Parameters:
     """
     Parameters of the gravitational-wave signal.
 
-    :param M_chirp: Chirp mass of the binary (kg)
-    :param r: Luminosity distance to the source (m)
+    :param m_1: Mass of the first component in the binary (kg)
+    :param m_2: Mass of the second component in the binary (kg)
+    :param r: Luminosity distance to the binary (m)
     :param iota: Inclination angle of the binary (rad)
     :param t_c: Coalescence time (s)
     :param Phi_c: Coalescence phase (rad)
-    :param theta: Polar angle of the source in the detector frame (rad)
-    :param phi: Azimuthal angle of the source in the detector frame (rad)
-    :param psi: Polarization angle of the source in the detector frame (rad)
+    :param theta: Polar angle of the binary in the detector frame (rad)
+    :param phi: Azimuthal angle of the binary in the detector frame (rad)
+    :param psi: Polarisation angle of the binary in the detector frame (rad)
     """
 
-    M_chirp: float
+    m_1: float
+    m_2: float
     r: float
     iota: float
     t_c: float
     Phi_c: float
+
+    # NOTE: pattern function angles
     theta: float
     phi: float
     psi: float
 
+    M: float = field(init=False)
+    M_chirp: float = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Calculate derived parameters."""
+        self.M = self.m_1 + self.m_2
+        self.M_chirp = (self.m_1 * self.m_2) ** (3 / 5) / self.M ** (1 / 5)
+
 
 class Waveform:
     """
-    Gravitational waveform class.
+    Gravitational waveform.
 
     :param f_min: Minimum frequency (Hz)
     :param f_max: Maximum frequency (Hz)
-    :param delta_f: Frequency resolution (Hz)
+    :param Delta_f: Frequency resolution (Hz)
     :param parameters: Parameters of the gravitational-wave signal
     """
 
-    def __init__(self, f_min: float, f_max: float, delta_f: float, parameters: Parameters) -> None:
+    def __init__(self, f_min: float, f_max: float, Delta_f: float, parameters: Parameters) -> None:
         self.f_min = f_min
-        self.f_max = f_max
-        self.delta_f = delta_f
+        self.Delta_f = Delta_f
         self.parameters = parameters
 
-        self.f = numpy.arange(f_min, f_max, delta_f, numpy.float64)
+        f_max = min(f_max, calculate_innermost_stable_circular_orbit_frequency(parameters.M))
+        self.f_max = f_max
+
+        self.f = numpy.arange(f_min, f_max, Delta_f, numpy.float64)
         self.h_tilde_plus, self.h_tilde_cross = self.calculate_strain_polarisations(self.f, parameters)
 
     @staticmethod
@@ -82,3 +96,13 @@ class Waveform:
         h_tilde_cross = A * numpy.exp(1j * (Psi + numpy.pi / 2)) * numpy.cos(parameters.iota)
 
         return h_tilde_plus, h_tilde_cross
+
+
+def calculate_innermost_stable_circular_orbit_frequency(M: float) -> float:
+    """
+    Calculate the innermost stable circular orbit frequency.
+
+    :param M: Total mass of the binary (kg)
+    :return f_ISCO: innermost stable circular orbit frequency (Hz)
+    """
+    return 1 / (6 ** (3 / 2) * numpy.pi) * c**3 / (G * M)
