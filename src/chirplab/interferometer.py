@@ -10,8 +10,15 @@ PWD = Path(__file__).parent
 
 
 class Interferometer:
-    """Gravitational-wave interferometer."""
+    """
+    Gravitational-wave interferometer.
 
+    :param amplitude_spectral_density_file: File containing the amplitude spectral density data
+    :param f_min: Minimum frequency (Hz)
+    :param f_max: Maximum frequency (Hz)
+    """
+
+    # TODO: add parameters in docstring
     def __init__(self, amplitude_spectral_density_file: Path, f_min: float, f_max: float) -> None:
         self.amplitude_spectral_density_file = amplitude_spectral_density_file
         self.f_min = f_min
@@ -29,10 +36,10 @@ class Interferometer:
         self, f: numpy.typing.NDArray[numpy.floating]
     ) -> numpy.typing.NDArray[numpy.floating]:
         """
-        Interpolate the noise power-spectral density at specified frequencies.
+        Interpolate the noise power spectral density at specified frequencies.
 
         :param f: Frequency array (Hz)
-        :return S_n: Noise power-spectral density (Hz^-1)
+        :return S_n: Noise power spectral density (Hz^-1)
         """
         S_n: numpy.typing.NDArray[numpy.floating] = numpy.interp(f, self.f, self.S_n)
         return S_n
@@ -68,7 +75,7 @@ class Interferometer:
 
         :param a_tilde: First frequency-domain function (Hz^-1)
         :param b_tilde: Second frequency-domain function (Hz^-1)
-        :param S_n: Noise power-spectral density (Hz^-1)
+        :param S_n: Noise power spectral density (Hz^-1)
         :param delta_f: Frequency resolution (Hz)
         :return inner_product: Inner product
         """
@@ -77,30 +84,61 @@ class Interferometer:
         integral = numpy.sum(integrand, dtype=numpy.complex128) * Delta_f
         return 4 * integral
 
-    def inject(self, signal: waveform.Waveform, is_zero_noise: bool = True) -> None:
+    def inject(
+        self, signal: waveform.Waveform, is_zero_noise: bool = False, rng: numpy.random.Generator | None = None
+    ) -> None:
         """
         Inject gravitational-wave signal into the interferometer.
 
         :param signal: Gravitational-wave signal
         :param is_zero_noise: Whether to use zero noise
+        :param rng: Random number generator for the noise realisation
         """
         F_plus, F_cross = self.calculate_pattern_functions(
             signal.parameters.theta, signal.parameters.phi, signal.parameters.psi
         )
         self.h_tilde = F_plus * signal.h_tilde_plus + F_cross * signal.h_tilde_cross
 
+        S_n = self.interpolate_power_spectral_density(signal.f)
+
         # TODO: add realistic noise realisation
         if is_zero_noise:
             self.n_tilde = numpy.zeros_like(self.h_tilde)
         else:
-            msg = "Realistic noise generation is not yet implemented."
-            raise NotImplementedError(msg)
+            if rng is None:
+                rng = numpy.random.default_rng()
+
+            self.n_tilde = S_n ** (1 / 2) * generate_white_noise(signal.f, rng)
 
         self.d_tilde = self.h_tilde + self.n_tilde
 
-        S_n = self.interpolate_power_spectral_density(signal.f)
         self.rho = self.calculate_inner_product(self.h_tilde, self.h_tilde, S_n, signal.Delta_f).real ** (1 / 2)
         self.rho_MF = self.calculate_inner_product(self.d_tilde, self.h_tilde, S_n, signal.Delta_f) / self.rho
+
+
+def generate_white_noise(
+    f: numpy.typing.NDArray[numpy.floating], rng: numpy.random.Generator
+) -> numpy.typing.NDArray[numpy.complexfloating]:
+    """
+    Generate white noise.
+
+    :param f: Frequency array (Hz)
+    :param rng: Random number generator
+    :return n_tilde: Frequency-domain white noise (Hz^-1)
+    """
+    diffs = numpy.diff(f)
+    Delta_f: numpy.floating = diffs[0]
+    assert numpy.all(diffs == Delta_f), "Frequency array must have uniform spacing."
+
+    sigma = 1 / 2 * (1 / Delta_f) ** (1 / 2)
+
+    re: numpy.typing.NDArray[numpy.floating]
+    im: numpy.typing.NDArray[numpy.floating]
+    re, im = rng.normal(0, sigma, (2, f.size))
+
+    n_tilde = re + 1j * im
+    n_tilde[0] = 0
+    return n_tilde
 
 
 class LIGO(Interferometer):
