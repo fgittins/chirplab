@@ -62,27 +62,6 @@ class Interferometer:
 
         return F_plus, F_cross
 
-    @staticmethod
-    def calculate_inner_product(
-        a_tilde: numpy.typing.NDArray[numpy.complexfloating],
-        b_tilde: numpy.typing.NDArray[numpy.complexfloating],
-        S_n: numpy.typing.NDArray[numpy.floating],
-        Delta_f: float,
-    ) -> numpy.complex128:
-        """
-        Calculate the (complex) noise-weighted inner product of two frequency-domain functions.
-
-        :param a_tilde: First frequency-domain function (Hz^-1)
-        :param b_tilde: Second frequency-domain function (Hz^-1)
-        :param S_n: Noise power spectral density (Hz^-1)
-        :param delta_f: Frequency resolution (Hz)
-        :return inner_product: Inner product
-        """
-        assert a_tilde.shape == b_tilde.shape == S_n.shape, "Input arrays must have the same shape."
-        integrand = (a_tilde.conj() * b_tilde) / S_n
-        integral = numpy.sum(integrand, dtype=numpy.complex128) * Delta_f
-        return 4 * integral
-
     def inject(
         self, signal: waveform.Waveform, is_zero_noise: bool = False, rng: numpy.random.Generator | None = None
     ) -> None:
@@ -111,8 +90,29 @@ class Interferometer:
 
         self.d_tilde = self.h_tilde + self.n_tilde
 
-        self.rho = self.calculate_inner_product(self.h_tilde, self.h_tilde, S_n, signal.Delta_f).real ** (1 / 2)
-        self.rho_MF = self.calculate_inner_product(self.d_tilde, self.h_tilde, S_n, signal.Delta_f) / self.rho
+        self.rho = calculate_inner_product(self.h_tilde, self.h_tilde, S_n, signal.Delta_f).real ** (1 / 2)
+        self.rho_MF = calculate_inner_product(self.d_tilde, self.h_tilde, S_n, signal.Delta_f) / self.rho
+
+
+def calculate_inner_product(
+    a_tilde: numpy.typing.NDArray[numpy.complexfloating],
+    b_tilde: numpy.typing.NDArray[numpy.complexfloating],
+    S_n: numpy.typing.NDArray[numpy.floating],
+    Delta_f: float,
+) -> numpy.complex128:
+    """
+    Calculate the (complex) noise-weighted inner product of two frequency-domain functions.
+
+    :param a_tilde: First frequency-domain function (Hz^-1)
+    :param b_tilde: Second frequency-domain function (Hz^-1)
+    :param S_n: Noise power spectral density (Hz^-1)
+    :param Delta_f: Frequency resolution (Hz)
+    :return inner_product: Inner product
+    """
+    assert a_tilde.shape == b_tilde.shape == S_n.shape, "Input arrays must have the same shape."
+    integrand = (a_tilde.conj() * b_tilde) / S_n
+    integral = numpy.sum(integrand, dtype=numpy.complex128) * Delta_f
+    return 4 * integral
 
 
 def generate_white_noise(
