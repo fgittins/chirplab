@@ -18,7 +18,6 @@ class Interferometer:
     :param f_max: Maximum frequency (Hz)
     """
 
-    # TODO: add parameters in docstring
     def __init__(self, amplitude_spectral_density_file: Path, f_min: float, f_max: float) -> None:
         self.amplitude_spectral_density_file = amplitude_spectral_density_file
         self.f_min = f_min
