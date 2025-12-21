@@ -79,7 +79,6 @@ class Interferometer:
 
         S_n = self.interpolate_power_spectral_density(signal.f)
 
-        # TODO: add realistic noise realisation
         if is_zero_noise:
             self.n_tilde = numpy.zeros_like(self.h_tilde)
         else:
