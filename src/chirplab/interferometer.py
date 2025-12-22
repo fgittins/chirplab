@@ -1,5 +1,6 @@
 """Module for interferometer response to gravitational-wave signals."""
 
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy
@@ -9,51 +10,69 @@ from . import waveform
 PWD = Path(__file__).parent
 
 
+@dataclass
+class Grid:
+    """
+    Frequency grid for the data.
+
+    :param f_min: Minimum frequency (Hz)
+    :param f_max: Maximum frequency (Hz)
+    :param Delta_f: Frequency resolution (Hz)
+    """
+
+    f_min: float
+    f_max: float
+    Delta_f: float
+
+
 class Interferometer:
     """
     Gravitational-wave interferometer.
 
     :param amplitude_spectral_density_file: File containing the amplitude spectral density data
-    :param f_min: Minimum frequency (Hz)
-    :param f_max: Maximum frequency (Hz)
-    :param Delta_f: Frequency resolution (Hz)
+    :param grid: Frequency grid for the data
     :param rng: Random number generator for the noise realisation
+    :param is_zero_noise: Whether to use zero noise realisation
     """
 
     def __init__(
         self,
         amplitude_spectral_density_file: Path,
-        f_min: float,
-        f_max: float,
-        Delta_f: float,
-        rng: numpy.random.Generator | None = None,
+        grid: Grid,
+        rng: None | numpy.random.Generator = None,
+        is_zero_noise: bool = False,
     ) -> None:
         self.amplitude_spectral_density_file = amplitude_spectral_density_file
-        self.f_min = f_min
-        self.f_max = f_max
-        self.Delta_f = Delta_f
+        self.f_min = grid.f_min
+        self.f_max = grid.f_max
+        self.Delta_f = grid.Delta_f
         self.rng = rng
+        self.is_zero_noise = is_zero_noise
+
+        self.f = numpy.arange(self.f_min, self.f_max + self.Delta_f, self.Delta_f)
 
         f_data, amplitude_spectral_density_data = numpy.loadtxt(
             amplitude_spectral_density_file, numpy.float64, unpack=True
         )
-        in_bounds_mask = (f_min <= f_data) & (f_data <= f_max)
+        in_bounds_mask = (self.f_min <= f_data) & (f_data <= self.f_max)
         f_data = f_data[in_bounds_mask]
         S_n_data = amplitude_spectral_density_data[in_bounds_mask] ** 2
 
-        self.f = numpy.arange(f_min, f_max + Delta_f, Delta_f)
-
         self.S_n = numpy.interp(self.f, f_data, S_n_data)
 
-        if rng is None:
+        if is_zero_noise:
             self.n_tilde = numpy.zeros_like(self.f, numpy.complex128)
         else:
-            f_noise, white_noise = generate_white_noise(f_max, Delta_f, rng)
-            in_bounds_mask = f_min <= f_noise
+            if rng is None:
+                rng = numpy.random.default_rng()
+
+            f_noise, white_noise = generate_white_noise(self.f_max, self.Delta_f, rng)
+            in_bounds_mask = self.f_min <= f_noise
             assert numpy.all(self.f == f_noise[in_bounds_mask]), "Frequency arrays do not match."
+
             self.n_tilde = self.S_n ** (1 / 2) * white_noise[in_bounds_mask]
 
-        self.d_tilde = self.n_tilde
+        self.d_tilde = self.n_tilde.copy()
 
     @staticmethod
     def calculate_pattern_functions(theta: float, phi: float, psi: float) -> tuple[numpy.floating, numpy.floating]:
@@ -94,8 +113,9 @@ class Interferometer:
 class LIGO(Interferometer):
     """LIGO gravitational-wave interferometer."""
 
-    def __init__(self, Delta_f: float, rng: numpy.random.Generator | None = None) -> None:
-        super().__init__(PWD / "data/aligo_O4high.txt", 20, 2048, Delta_f, rng)
+    def __init__(self, Delta_f: float, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
+        grid = Grid(f_min=20, f_max=2048, Delta_f=Delta_f)
+        super().__init__(PWD / "data/aligo_O4high.txt", grid, rng, is_zero_noise)
 
 
 def calculate_inner_product(
@@ -114,7 +134,7 @@ def calculate_inner_product(
     :return inner_product: Inner product
     """
     assert a_tilde.size == b_tilde.size == S_n.size, "Input arrays must have the same size."
-    integrand = (a_tilde.conj() * b_tilde) / S_n
+    integrand = a_tilde.conj() * b_tilde / S_n
     integral = numpy.sum(integrand, dtype=numpy.complex128) * Delta_f
     return 4 * integral
 
