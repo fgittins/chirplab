@@ -14,32 +14,46 @@ class Interferometer:
     Gravitational-wave interferometer.
 
     :param amplitude_spectral_density_file: File containing the amplitude spectral density data
-    :param f_min_sens: Minimum sensitivity frequency (Hz)
-    :param f_max_sens: Maximum sensitivity frequency (Hz)
+    :param f_min: Minimum frequency (Hz)
+    :param f_max: Maximum frequency (Hz)
+    :param Delta_f: Frequency resolution (Hz)
+    :param rng: Random number generator for the noise realisation
     """
 
-    def __init__(self, amplitude_spectral_density_file: Path, f_min_sens: float, f_max_sens: float) -> None:
+    def __init__(
+        self,
+        amplitude_spectral_density_file: Path,
+        f_min: float,
+        f_max: float,
+        Delta_f: float,
+        rng: numpy.random.Generator | None = None,
+    ) -> None:
         self.amplitude_spectral_density_file = amplitude_spectral_density_file
-        self.f_min_sens = f_min_sens
-        self.f_max_sens = f_max_sens
+        self.f_min = f_min
+        self.f_max = f_max
+        self.Delta_f = Delta_f
+        self.rng = rng
 
-        f, amplitude_spectral_density = numpy.loadtxt(amplitude_spectral_density_file, numpy.float64, unpack=True)
+        f_data, amplitude_spectral_density_data = numpy.loadtxt(
+            amplitude_spectral_density_file, numpy.float64, unpack=True
+        )
+        in_bounds_mask = (f_min <= f_data) & (f_data <= f_max)
+        f_data = f_data[in_bounds_mask]
+        S_n_data = amplitude_spectral_density_data[in_bounds_mask] ** 2
 
-        in_bounds_mask = (f_min_sens <= f) & (f <= f_max_sens)
-        self.f_data = f[in_bounds_mask]
-        self.S_n_data = amplitude_spectral_density[in_bounds_mask] ** 2
+        self.f = numpy.arange(f_min, f_max + Delta_f, Delta_f)
 
-    def interpolate_power_spectral_density(
-        self, f: numpy.typing.NDArray[numpy.floating]
-    ) -> numpy.typing.NDArray[numpy.floating]:
-        """
-        Interpolate the noise power spectral density at specified frequencies.
+        self.S_n = numpy.interp(self.f, f_data, S_n_data)
 
-        :param f: Frequency array (Hz)
-        :return S_n: Noise power spectral density (Hz^-1)
-        """
-        S_n: numpy.typing.NDArray[numpy.floating] = numpy.interp(f, self.f_data, self.S_n_data)
-        return S_n
+        if rng is None:
+            self.n_tilde = numpy.zeros_like(self.f, numpy.complex128)
+        else:
+            f_noise, white_noise = generate_white_noise(f_max, Delta_f, rng)
+            in_bounds_mask = f_min <= f_noise
+            assert numpy.all(self.f == f_noise[in_bounds_mask]), "Frequency arrays do not match."
+            self.n_tilde = self.S_n ** (1 / 2) * white_noise[in_bounds_mask]
+
+        self.d_tilde = self.n_tilde
 
     @staticmethod
     def calculate_pattern_functions(theta: float, phi: float, psi: float) -> tuple[numpy.floating, numpy.floating]:
@@ -60,59 +74,28 @@ class Interferometer:
 
         return F_plus, F_cross
 
-    def inject(
-        self,
-        model: waveform.Waveform,
-        parameters: waveform.Parameters,
-        is_zero_noise: bool = False,
-        rng: numpy.random.Generator | None = None,
-    ) -> None:
+    def inject(self, model: waveform.Waveform, parameters: waveform.Parameters) -> None:
         """
         Inject gravitational-wave signal into the interferometer.
 
         :param model: Gravitational-waveform model
         :param parameters: Parameters of the gravitational-wave signal
-        :param is_zero_noise: Whether to use zero noise
-        :param rng: Random number generator for the noise realisation
         """
-        self.f_min = model.f_min
-        self.f_max = model.f_max
-        self.Delta_f = model.Delta_f
-        self.f = numpy.arange(self.f_min, self.f_max + self.Delta_f, self.Delta_f)
-
-        # NOTE: zero response outside the sensitivity band
-        out_of_bounds_mask = (self.f < self.f_min_sens) | (self.f_max_sens < self.f)
-
         h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, parameters)
         F_plus, F_cross = self.calculate_pattern_functions(parameters.theta, parameters.phi, parameters.psi)
         self.h_tilde = F_plus * h_tilde_plus + F_cross * h_tilde_cross
-        self.h_tilde[out_of_bounds_mask] = 0
 
-        self.S_n = self.interpolate_power_spectral_density(self.f)
-        self.S_n[out_of_bounds_mask] = numpy.inf
-
-        if is_zero_noise:
-            self.n_tilde = numpy.zeros_like(self.h_tilde)
-        else:
-            if rng is None:
-                rng = numpy.random.default_rng()
-
-            f, white_noise = generate_white_noise(self.f_max, self.Delta_f, rng)
-            in_bounds_mask = (self.f_min <= f) & (f <= self.f_max)
-            self.n_tilde = self.S_n ** (1 / 2) * white_noise[in_bounds_mask]
-            self.n_tilde[out_of_bounds_mask] = 0
-
-        self.d_tilde = self.h_tilde + self.n_tilde
+        self.d_tilde += self.h_tilde
 
         self.rho = calculate_inner_product(self.h_tilde, self.h_tilde, self.S_n, self.Delta_f).real ** (1 / 2)
-        self.rho_MF = calculate_inner_product(self.d_tilde, self.h_tilde, self.S_n, self.Delta_f) / self.rho
+        self.rho_MF = calculate_inner_product(self.h_tilde, self.d_tilde, self.S_n, self.Delta_f) / self.rho
 
 
 class LIGO(Interferometer):
     """LIGO gravitational-wave interferometer."""
 
-    def __init__(self) -> None:
-        super().__init__(PWD / "data/aligo_O4high.txt", 20, 2048)
+    def __init__(self, Delta_f: float, rng: numpy.random.Generator | None = None) -> None:
+        super().__init__(PWD / "data/aligo_O4high.txt", 20, 2048, Delta_f, rng)
 
 
 def calculate_inner_product(

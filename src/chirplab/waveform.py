@@ -49,18 +49,7 @@ class Parameters:
 
 
 class Waveform:
-    """
-    Gravitational-waveform base class.
-
-    :param f_min: Minimum frequency (Hz)
-    :param f_max: Maximum frequency (Hz)
-    :param Delta_f: Frequency resolution (Hz)
-    """
-
-    def __init__(self, f_min: float, f_max: float, Delta_f: float) -> None:
-        self.f_min = f_min
-        self.f_max = f_max
-        self.Delta_f = Delta_f
+    """Gravitational-waveform base class."""
 
     def calculate_strain_polarisations(
         self, f: numpy.typing.NDArray[numpy.floating], parameters: Parameters
@@ -76,27 +65,9 @@ class Waveform:
         msg = "Waveform models must implement this method."
         raise NotImplementedError(msg)
 
-    def calculate_maximum_frequency(self, parameters: Parameters) -> float:
-        """
-        Calculate the maximum allowed frequency of the waveform.
-
-        :param parameters: Parameters of the gravitational-wave signal
-        :return f_max: Maximum frequency (Hz)
-        """
-        return numpy.inf
-
 
 class NewtonianWaveform(Waveform):
-    """
-    Gravitational waveform using the leading-order Newtonian approximation.
-
-    :param f_min: Minimum frequency (Hz)
-    :param f_max: Maximum frequency (Hz)
-    :param Delta_f: Frequency resolution (Hz)
-    """
-
-    def __init__(self, f_min: float, f_max: float, Delta_f: float) -> None:
-        super().__init__(f_min, f_max, Delta_f)
+    """Gravitational waveform using the leading-order Newtonian approximation."""
 
     @staticmethod
     def calculate_strain_polarisations(
@@ -136,15 +107,6 @@ class NewtonianWaveform(Waveform):
         h_tilde_cross[valid_mask] = A * numpy.exp(1j * (Psi + numpy.pi / 2)) * numpy.cos(parameters.iota)
 
         return h_tilde_plus, h_tilde_cross
-
-    def calculate_maximum_frequency(self, parameters: Parameters) -> float:
-        """
-        Calculate the maximum allowed frequency of the waveform.
-
-        :param parameters: Parameters of the gravitational-wave signal
-        :return f_max: Maximum frequency (Hz)
-        """
-        return calculate_innermost_stable_circular_orbit_frequency(parameters.M)
 
 
 def calculate_innermost_stable_circular_orbit_frequency(M: float) -> float:
