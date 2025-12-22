@@ -50,29 +50,21 @@ class Parameters:
 
 class Waveform:
     """
-    Gravitational waveform.
+    Gravitational-waveform base class.
 
     :param f_min: Minimum frequency (Hz)
     :param f_max: Maximum frequency (Hz)
     :param Delta_f: Frequency resolution (Hz)
-    :param parameters: Parameters of the gravitational-wave signal
     """
 
-    def __init__(self, f_min: float, f_max: float, Delta_f: float, parameters: Parameters) -> None:
+    def __init__(self, f_min: float, f_max: float, Delta_f: float) -> None:
         self.f_min = f_min
-        self.Delta_f = Delta_f
-        self.parameters = parameters
-
-        f_max = min(f_max, calculate_innermost_stable_circular_orbit_frequency(parameters.M))
         self.f_max = f_max
+        self.Delta_f = Delta_f
 
-        self.f = numpy.arange(f_min, f_max + Delta_f, Delta_f, dtype=numpy.float64)
-        self.h_tilde_plus, self.h_tilde_cross = self.calculate_strain_polarisations(self.f, parameters)
-
-    @staticmethod
     def calculate_strain_polarisations(
-        f: numpy.typing.NDArray[numpy.floating], parameters: Parameters
-    ) -> tuple[numpy.typing.NDArray[numpy.complexfloating], numpy.typing.NDArray[numpy.complexfloating]]:
+        self, f: numpy.typing.NDArray[numpy.floating], parameters: Parameters
+    ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.
 
@@ -81,29 +73,83 @@ class Waveform:
         :return h_tilde_plus: Frequency-domain plus-polarisation strain (Hz^-1)
         :return h_tilde_cross: Frequency-domain cross-polarisation strain (Hz^-1)
         """
+        msg = "Waveform models must implement this method."
+        raise NotImplementedError(msg)
+
+    def calculate_maximum_frequency(self, parameters: Parameters) -> float:
+        """
+        Calculate the maximum allowed frequency of the waveform.
+
+        :param parameters: Parameters of the gravitational-wave signal
+        :return f_max: Maximum frequency (Hz)
+        """
+        return numpy.inf
+
+
+class NewtonianWaveform(Waveform):
+    """
+    Gravitational waveform using the leading-order Newtonian approximation.
+
+    :param f_min: Minimum frequency (Hz)
+    :param f_max: Maximum frequency (Hz)
+    :param Delta_f: Frequency resolution (Hz)
+    """
+
+    def __init__(self, f_min: float, f_max: float, Delta_f: float) -> None:
+        super().__init__(f_min, f_max, Delta_f)
+
+    @staticmethod
+    def calculate_strain_polarisations(
+        f: numpy.typing.NDArray[numpy.floating], parameters: Parameters
+    ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
+        """
+        Calculate the frequency-domain strain polarisations.
+
+        :param f: Frequency array (Hz)
+        :param parameters: Parameters of the gravitational-wave signal
+        :return h_tilde_plus: Frequency-domain plus-polarisation strain (Hz^-1)
+        :return h_tilde_cross: Frequency-domain cross-polarisation strain (Hz^-1)
+        """
+        h_tilde_plus = numpy.zeros_like(f, numpy.complex128)
+        h_tilde_cross = numpy.zeros_like(f, numpy.complex128)
+
+        # NOTE: model does not apply above the innermost stable circular orbit frequency
+        f_ISCO = calculate_innermost_stable_circular_orbit_frequency(parameters.M)
+        valid_mask = f <= f_ISCO
+        f_valid = f[valid_mask]
+
         A = (
             (5 / 24) ** (1 / 2)
             * (1 / numpy.pi ** (2 / 3))
             * (c / parameters.r)
             * (G * parameters.M_chirp / c**3) ** (5 / 6)
-            * (1 / f ** (7 / 6))
+            * (1 / f_valid ** (7 / 6))
         )
         Psi = (
-            2 * numpy.pi * f * parameters.t_c
+            2 * numpy.pi * f_valid * parameters.t_c
             - parameters.Phi_c
             - numpy.pi / 4
-            + 3 / 4 * (G * parameters.M_chirp / c**3 * 8 * numpy.pi * f) ** (-5 / 3)
+            + 3 / 4 * (G * parameters.M_chirp / c**3 * 8 * numpy.pi * f_valid) ** (-5 / 3)
         )
 
-        h_tilde_plus = A * numpy.exp(1j * Psi) * (1 + numpy.cos(parameters.iota) ** 2) / 2
-        h_tilde_cross = A * numpy.exp(1j * (Psi + numpy.pi / 2)) * numpy.cos(parameters.iota)
+        h_tilde_plus[valid_mask] = A * numpy.exp(1j * Psi) * (1 + numpy.cos(parameters.iota) ** 2) / 2
+        h_tilde_cross[valid_mask] = A * numpy.exp(1j * (Psi + numpy.pi / 2)) * numpy.cos(parameters.iota)
 
         return h_tilde_plus, h_tilde_cross
+
+    def calculate_maximum_frequency(self, parameters: Parameters) -> float:
+        """
+        Calculate the maximum allowed frequency of the waveform.
+
+        :param parameters: Parameters of the gravitational-wave signal
+        :return f_max: Maximum frequency (Hz)
+        """
+        return calculate_innermost_stable_circular_orbit_frequency(parameters.M)
 
 
 def calculate_innermost_stable_circular_orbit_frequency(M: float) -> float:
     """
-    Calculate the innermost stable circular orbit frequency.
+    Calculate the gravitational-wave frequency of the innermost stable circular orbit.
 
     :param M: Total mass of the binary (kg)
     :return f_ISCO: innermost stable circular orbit frequency (Hz)
