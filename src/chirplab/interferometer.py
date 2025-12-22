@@ -113,7 +113,7 @@ def calculate_inner_product(
     :param Delta_f: Frequency resolution (Hz)
     :return inner_product: Inner product
     """
-    assert a_tilde.shape == b_tilde.shape == S_n.shape, "Input arrays must have the same shape."
+    assert a_tilde.size == b_tilde.size == S_n.size, "Input arrays must have the same size."
     integrand = (a_tilde.conj() * b_tilde) / S_n
     integral = numpy.sum(integrand, dtype=numpy.complex128) * Delta_f
     return 4 * integral
