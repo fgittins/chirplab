@@ -66,7 +66,7 @@ class Waveform:
         f_max = min(f_max, calculate_innermost_stable_circular_orbit_frequency(parameters.M))
         self.f_max = f_max
 
-        self.f = numpy.arange(f_min, f_max + Delta_f, Delta_f, numpy.float64)
+        self.f = numpy.arange(f_min, f_max + Delta_f, Delta_f, dtype=numpy.float64)
         self.h_tilde_plus, self.h_tilde_cross = self.calculate_strain_polarisations(self.f, parameters)
 
     @staticmethod

@@ -77,7 +77,8 @@ class Interferometer:
         )
         self.h_tilde = F_plus * signal.h_tilde_plus + F_cross * signal.h_tilde_cross
 
-        f = signal.f[(self.f_min <= signal.f) & (signal.f <= self.f_max)]
+        mask = (self.f_min <= signal.f) & (signal.f <= self.f_max)
+        f = signal.f[mask]
         S_n = self.interpolate_power_spectral_density(f)
 
         if is_zero_noise:
@@ -125,9 +126,9 @@ def generate_white_noise(
     :param rng: Random number generator
     :return n_tilde: Frequency-domain white noise (Hz^-1)
     """
-    diffs = numpy.diff(f)
-    Delta_f: numpy.floating = diffs[0]
-    assert numpy.all(diffs == Delta_f), "Frequency array must have uniform spacing."
+    Delta_fs = numpy.diff(f)
+    Delta_f: numpy.floating = Delta_fs[0]
+    assert numpy.all(Delta_fs == Delta_f), "Frequency array must have uniform spacing."
 
     sigma = 1 / 2 * (1 / Delta_f) ** (1 / 2)
 
