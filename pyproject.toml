@@ -54,6 +54,7 @@ lint.ignore = [
     # flake8-implicit-str-concat
     "ISC002",
 ]
+lint.pycodestyle.max-doc-length = 120
 lint.pydocstyle.convention = "numpy"
 
 [tool.mypy]
