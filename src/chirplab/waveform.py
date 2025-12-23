@@ -13,15 +13,26 @@ class Parameters:
     """
     Parameters of the gravitational-wave signal.
 
-    :param m_1: Mass of the first component in the binary (kg)
-    :param m_2: Mass of the second component in the binary (kg)
-    :param r: Luminosity distance to the binary (m)
-    :param iota: Inclination angle of the binary (rad)
-    :param t_c: Coalescence time (s)
-    :param Phi_c: Coalescence phase (rad)
-    :param theta: Polar angle of the binary in the detector frame (rad)
-    :param phi: Azimuthal angle of the binary in the detector frame (rad)
-    :param psi: Polarisation angle of the binary in the detector frame (rad)
+    Parameters
+    ----------
+    m_1
+        Mass of the first component in the binary (kg).
+    m_2
+        Mass of the second component in the binary (kg).
+    r
+        Luminosity distance to the binary (m).
+    iota
+        Inclination angle of the binary (rad).
+    t_c
+        Coalescence time (s).
+    Phi_c
+        Coalescence phase (rad).
+    theta
+        Polar angle of the binary in the detector frame (rad).
+    phi
+        Azimuthal angle of the binary in the detector frame (rad).
+    psi
+        Polarisation angle of the binary in the detector frame (rad).
     """
 
     m_1: float
@@ -57,10 +68,19 @@ class Waveform:
         """
         Calculate the frequency-domain strain polarisations.
 
-        :param f: Frequency array (Hz)
-        :param theta: Parameters of the gravitational-wave signal
-        :return h_tilde_plus: Frequency-domain plus-polarisation strain (Hz^-1)
-        :return h_tilde_cross: Frequency-domain cross-polarisation strain (Hz^-1)
+        Parameters
+        ----------
+        f
+            Frequency array (Hz).
+        theta
+            Parameters of the gravitational-wave signal.
+
+        Returns
+        -------
+        h_tilde_plus
+            Frequency-domain plus-polarisation strain (Hz^-1).
+        h_tilde_cross
+            Frequency-domain cross-polarisation strain (Hz^-1).
         """
         msg = "Waveform models must implement this method."
         raise NotImplementedError(msg)
@@ -76,10 +96,19 @@ class NewtonianWaveform(Waveform):
         """
         Calculate the frequency-domain strain polarisations.
 
-        :param f: Frequency array (Hz)
-        :param theta: Parameters of the gravitational-wave signal
-        :return h_tilde_plus: Frequency-domain plus-polarisation strain (Hz^-1)
-        :return h_tilde_cross: Frequency-domain cross-polarisation strain (Hz^-1)
+        Parameters
+        ----------
+        f
+            Frequency array (Hz).
+        theta
+            Parameters of the gravitational-wave signal.
+
+        Returns
+        -------
+        h_tilde_plus
+            Frequency-domain plus-polarisation strain (Hz^-1).
+        h_tilde_cross
+            Frequency-domain cross-polarisation strain (Hz^-1).
         """
         h_tilde_plus = numpy.zeros_like(f, numpy.complex128)
         h_tilde_cross = numpy.zeros_like(f, numpy.complex128)
@@ -113,7 +142,14 @@ def calculate_innermost_stable_circular_orbit_frequency(M: float) -> float:
     """
     Calculate the gravitational-wave frequency of the innermost stable circular orbit.
 
-    :param M: Total mass of the binary (kg)
-    :return f_ISCO: innermost stable circular orbit frequency (Hz)
+    Parameters
+    ----------
+    M
+        Total mass of the binary (kg).
+
+    Returns
+    -------
+    f_ISCO
+        Innermost stable circular orbit frequency (Hz).
     """
     return 1 / (6 ** (3 / 2) * numpy.pi) * c**3 / (G * M)

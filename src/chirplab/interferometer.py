@@ -15,9 +15,14 @@ class Grid:
     """
     Frequency grid for the data.
 
-    :param f_min: Minimum frequency (Hz)
-    :param f_max: Maximum frequency (Hz)
-    :param Delta_f: Frequency resolution (Hz)
+    Parameters
+    ----------
+    f_min
+        Minimum frequency (Hz).
+    f_max
+        Maximum frequency (Hz).
+    Delta_f
+        Frequency resolution (Hz).
     """
 
     f_min: float
@@ -29,10 +34,16 @@ class Interferometer:
     """
     Gravitational-wave interferometer.
 
-    :param amplitude_spectral_density_file: File containing the amplitude spectral density data
-    :param grid: Frequency grid for the data
-    :param rng: Random number generator for the noise realisation
-    :param is_zero_noise: Whether to use zero noise realisation
+    Parameters
+    ----------
+    amplitude_spectral_density_file
+        File containing the amplitude spectral density data.
+    grid
+        Frequency grid for the data.
+    rng
+        Random number generator for the noise realisation.
+    is_zero_noise
+        Whether to use zero noise realisation.
     """
 
     def __init__(
@@ -79,11 +90,21 @@ class Interferometer:
         """
         Calculate the interferometer pattern functions.
 
-        :param theta: Polar angle of the source in the detector frame (rad)
-        :param phi: Azimuthal angle of the source in the detector frame (rad)
-        :param psi: Polarization angle of the source in the detector frame (rad)
-        :return F_plus: Plus pattern function
-        :return F_cross: Cross pattern function
+        Parameters
+        ----------
+        theta
+            Polar angle of the source in the detector frame (rad).
+        phi
+            Azimuthal angle of the source in the detector frame (rad).
+        psi
+            Polarization angle of the source in the detector frame (rad).
+
+        Returns
+        -------
+        F_plus
+            Plus pattern function.
+        F_cross
+            Cross pattern function.
         """
         F_plus_0 = 1 / 2 * (1 + numpy.cos(theta) ** 2) * numpy.cos(2 * phi)
         F_cross_0 = numpy.cos(theta) * numpy.sin(2 * phi)
@@ -97,8 +118,12 @@ class Interferometer:
         """
         Inject gravitational-wave signal into the interferometer.
 
-        :param model: Gravitational-waveform model
-        :param theta: Parameters of the gravitational-wave signal
+        Parameters
+        ----------
+        model
+            Gravitational-waveform model
+        theta
+            Parameters of the gravitational-wave signal
         """
         h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, theta)
         F_plus, F_cross = self.calculate_pattern_functions(theta.theta, theta.phi, theta.psi)
@@ -111,7 +136,18 @@ class Interferometer:
 
 
 class LIGO(Interferometer):
-    """LIGO gravitational-wave interferometer."""
+    """
+    LIGO gravitational-wave interferometer.
+
+    Parameters
+    ----------
+    Delta_f
+        Frequency resolution (Hz).
+    rng
+        Random number generator for the noise realisation.
+    is_zero_noise
+        Whether to use zero noise realisation.
+    """
 
     def __init__(self, Delta_f: float, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
         grid = Grid(f_min=20, f_max=2048, Delta_f=Delta_f)
@@ -127,11 +163,21 @@ def calculate_inner_product(
     """
     Calculate the (complex) noise-weighted inner product of two frequency-domain functions.
 
-    :param a_tilde: First frequency-domain function (Hz^-1)
-    :param b_tilde: Second frequency-domain function (Hz^-1)
-    :param S_n: Noise power spectral density (Hz^-1)
-    :param Delta_f: Frequency resolution (Hz)
-    :return inner_product: Inner product
+    Parameters
+    ----------
+    a_tilde
+        First frequency-domain function (Hz^-1).
+    b_tilde
+        Second frequency-domain function (Hz^-1).
+    S_n
+        Noise power spectral density (Hz^-1).
+    Delta_f
+        Frequency resolution (Hz).
+
+    Returns
+    -------
+    inner_product
+        Inner product.
     """
     assert a_tilde.size == b_tilde.size == S_n.size, "Input arrays must have the same size."
     integrand = a_tilde.conj() * b_tilde / S_n
@@ -145,11 +191,21 @@ def generate_white_noise(
     """
     Generate white noise.
 
-    :param f_max: Maximum frequency (Hz)
-    :param Delta_f: Frequency resolution (Hz)
-    :param rng: Random number generator
-    :return f: Frequency array (Hz)
-    :return white_noise: Frequency-domain white noise (Hz^-1)
+    Parameters
+    ----------
+    f_max
+        Maximum frequency (Hz).
+    Delta_f
+        Frequency resolution (Hz).
+    rng
+        Random number generator.
+
+    Returns
+    -------
+    f
+        Frequency array (Hz).
+    white_noise
+        Frequency-domain white noise (Hz^-1).
     """
     N = round(2 * f_max / Delta_f)
     f = numpy.arange(0, f_max + Delta_f, Delta_f)
