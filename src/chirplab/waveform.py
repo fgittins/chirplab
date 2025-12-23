@@ -9,7 +9,7 @@ G = 6.6743e-11
 
 
 @dataclass
-class Parameters:
+class SignalParameters:
     """
     Parameters of the gravitational-wave signal.
 
@@ -63,7 +63,7 @@ class Waveform:
     """Gravitational-waveform base class."""
 
     def calculate_strain_polarisations(
-        self, f: numpy.typing.NDArray[numpy.floating], theta: Parameters
+        self, f: numpy.typing.NDArray[numpy.floating], theta: SignalParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.
@@ -91,7 +91,7 @@ class NewtonianWaveform(Waveform):
 
     @staticmethod
     def calculate_strain_polarisations(
-        f: numpy.typing.NDArray[numpy.floating], theta: Parameters
+        f: numpy.typing.NDArray[numpy.floating], theta: SignalParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.

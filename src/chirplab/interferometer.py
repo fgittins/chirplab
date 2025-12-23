@@ -114,7 +114,7 @@ class Interferometer:
 
         return F_plus, F_cross
 
-    def inject(self, model: waveform.Waveform, theta: waveform.Parameters) -> None:
+    def inject(self, model: waveform.Waveform, theta: waveform.SignalParameters) -> None:
         """
         Inject gravitational-wave signal into the interferometer.
 
