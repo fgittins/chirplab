@@ -109,6 +109,14 @@ class NewtonianWaveform(Waveform):
             Frequency-domain plus-polarisation strain (Hz^-1).
         h_tilde_cross
             Frequency-domain cross-polarisation strain (Hz^-1).
+
+        Notes
+        -----
+        This implementation uses Eqs. (4.34)-(4.37) of Ref. [1].
+
+        References
+        ----------
+        [1]  M. Maggiore, Gravitational Waves. Volume 1: Theory and Experiments, (Oxford University Press, 2008).
         """
         h_tilde_plus = numpy.zeros_like(f, numpy.complex128)
         h_tilde_cross = numpy.zeros_like(f, numpy.complex128)
@@ -133,7 +141,7 @@ class NewtonianWaveform(Waveform):
         )
 
         h_tilde_plus[valid_mask] = A * numpy.exp(1j * Psi) * (1 + numpy.cos(Theta.iota) ** 2) / 2
-        h_tilde_cross[valid_mask] = A * numpy.exp(1j * (Psi + numpy.pi / 2)) * numpy.cos(Theta.iota)
+        h_tilde_cross[valid_mask] = 1j * A * numpy.exp(1j * Psi) * numpy.cos(Theta.iota)
 
         return h_tilde_plus, h_tilde_cross
 
