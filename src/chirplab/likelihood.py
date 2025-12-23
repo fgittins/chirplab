@@ -70,6 +70,10 @@ class Likelihood:
         -------
         ln_L
             Log-likelihood value.
+
+        Notes
+        -----
+        Irrelevant additive constants have been omitted.
         """
         n_inner_n = interferometer.calculate_inner_product(
             self.interferometer.n_tilde,
