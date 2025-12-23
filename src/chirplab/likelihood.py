@@ -53,12 +53,8 @@ class Likelihood:
         F_plus, F_cross = self.interferometer.calculate_pattern_functions(Theta.theta, Theta.phi, Theta.psi)
         h_tilde = h_tilde_plus * F_plus + h_tilde_cross * F_cross
 
-        h_inner_d = interferometer.calculate_inner_product(
-            h_tilde, self.interferometer.d_tilde, self.interferometer.S_n, self.interferometer.Delta_f
-        ).real
-        rho_squared = interferometer.calculate_inner_product(
-            h_tilde, h_tilde, self.interferometer.S_n, self.interferometer.Delta_f
-        ).real
+        h_inner_d = self.interferometer.calculate_inner_product(h_tilde, self.interferometer.d_tilde).real
+        rho_squared = self.interferometer.calculate_inner_product(h_tilde, h_tilde).real
 
         return h_inner_d - 1 / 2 * rho_squared
 
@@ -75,10 +71,7 @@ class Likelihood:
         -----
         Irrelevant additive constants have been omitted.
         """
-        n_inner_n = interferometer.calculate_inner_product(
-            self.interferometer.n_tilde,
-            self.interferometer.n_tilde,
-            self.interferometer.S_n,
-            self.interferometer.Delta_f,
+        n_inner_n = self.interferometer.calculate_inner_product(
+            self.interferometer.n_tilde, self.interferometer.n_tilde
         ).real
         return -1 / 2 * n_inner_n
