@@ -52,13 +52,13 @@ class Waveform:
     """Gravitational-waveform base class."""
 
     def calculate_strain_polarisations(
-        self, f: numpy.typing.NDArray[numpy.floating], parameters: Parameters
+        self, f: numpy.typing.NDArray[numpy.floating], theta: Parameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.
 
         :param f: Frequency array (Hz)
-        :param parameters: Parameters of the gravitational-wave signal
+        :param theta: Parameters of the gravitational-wave signal
         :return h_tilde_plus: Frequency-domain plus-polarisation strain (Hz^-1)
         :return h_tilde_cross: Frequency-domain cross-polarisation strain (Hz^-1)
         """
@@ -71,13 +71,13 @@ class NewtonianWaveform(Waveform):
 
     @staticmethod
     def calculate_strain_polarisations(
-        f: numpy.typing.NDArray[numpy.floating], parameters: Parameters
+        f: numpy.typing.NDArray[numpy.floating], theta: Parameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.
 
         :param f: Frequency array (Hz)
-        :param parameters: Parameters of the gravitational-wave signal
+        :param theta: Parameters of the gravitational-wave signal
         :return h_tilde_plus: Frequency-domain plus-polarisation strain (Hz^-1)
         :return h_tilde_cross: Frequency-domain cross-polarisation strain (Hz^-1)
         """
@@ -85,26 +85,26 @@ class NewtonianWaveform(Waveform):
         h_tilde_cross = numpy.zeros_like(f, numpy.complex128)
 
         # NOTE: model does not apply above the innermost stable circular orbit frequency
-        f_ISCO = calculate_innermost_stable_circular_orbit_frequency(parameters.M)
+        f_ISCO = calculate_innermost_stable_circular_orbit_frequency(theta.M)
         valid_mask = f <= f_ISCO
         f_valid = f[valid_mask]
 
         A = (
             (5 / 24) ** (1 / 2)
             * (1 / numpy.pi ** (2 / 3))
-            * (c / parameters.r)
-            * (G * parameters.M_chirp / c**3) ** (5 / 6)
+            * (c / theta.r)
+            * (G * theta.M_chirp / c**3) ** (5 / 6)
             * (1 / f_valid ** (7 / 6))
         )
         Psi = (
-            2 * numpy.pi * f_valid * parameters.t_c
-            - parameters.Phi_c
+            2 * numpy.pi * f_valid * theta.t_c
+            - theta.Phi_c
             - numpy.pi / 4
-            + 3 / 4 * (G * parameters.M_chirp / c**3 * 8 * numpy.pi * f_valid) ** (-5 / 3)
+            + 3 / 4 * (G * theta.M_chirp / c**3 * 8 * numpy.pi * f_valid) ** (-5 / 3)
         )
 
-        h_tilde_plus[valid_mask] = A * numpy.exp(1j * Psi) * (1 + numpy.cos(parameters.iota) ** 2) / 2
-        h_tilde_cross[valid_mask] = A * numpy.exp(1j * (Psi + numpy.pi / 2)) * numpy.cos(parameters.iota)
+        h_tilde_plus[valid_mask] = A * numpy.exp(1j * Psi) * (1 + numpy.cos(theta.iota) ** 2) / 2
+        h_tilde_cross[valid_mask] = A * numpy.exp(1j * (Psi + numpy.pi / 2)) * numpy.cos(theta.iota)
 
         return h_tilde_plus, h_tilde_cross
 

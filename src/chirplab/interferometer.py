@@ -93,15 +93,15 @@ class Interferometer:
 
         return F_plus, F_cross
 
-    def inject(self, model: waveform.Waveform, parameters: waveform.Parameters) -> None:
+    def inject(self, model: waveform.Waveform, theta: waveform.Parameters) -> None:
         """
         Inject gravitational-wave signal into the interferometer.
 
         :param model: Gravitational-waveform model
-        :param parameters: Parameters of the gravitational-wave signal
+        :param theta: Parameters of the gravitational-wave signal
         """
-        h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, parameters)
-        F_plus, F_cross = self.calculate_pattern_functions(parameters.theta, parameters.phi, parameters.psi)
+        h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, theta)
+        F_plus, F_cross = self.calculate_pattern_functions(theta.theta, theta.phi, theta.psi)
         self.h_tilde = F_plus * h_tilde_plus + F_cross * h_tilde_cross
 
         self.d_tilde += self.h_tilde
