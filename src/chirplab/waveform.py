@@ -1,4 +1,4 @@
-"""Module for gravitational-wave waveform generation."""
+"""Module for gravitational-waveform models."""
 
 from dataclasses import dataclass
 
@@ -112,7 +112,7 @@ class NewtonianWaveform(Waveform):
 
         Notes
         -----
-        This implementation uses Eqs. (4.34)-(4.37) of Ref. [1].
+        This implementation follows Eqs. (4.34)-(4.37) of Ref. [1].
 
         References
         ----------
