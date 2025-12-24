@@ -74,22 +74,22 @@ class TestWaveform:
         self, f_default: numpy.typing.NDArray[numpy.float64], Theta_default: waveform.SignalParameters
     ) -> None:
         """Test that the base `Waveform` class raises `NotImplementedError`."""
-        wform = waveform.Waveform()
+        model = waveform.Waveform()
 
         with pytest.raises(NotImplementedError):
-            wform.calculate_strain_polarisations(f_default, Theta_default)
+            model.calculate_strain_polarisations(f_default, Theta_default)
 
 
 class TestNewtonianWaveform:
     """Tests for the `NewtonianWaveform` class."""
 
-    wform = waveform.NewtonianWaveform()
+    model = waveform.NewtonianWaveform()
 
     def test_output_shape(
         self, f_default: numpy.typing.NDArray[numpy.float64], Theta_default: waveform.SignalParameters
     ) -> None:
         """Test that output arrays have the correct shape."""
-        h_tilde_plus, h_tilde_cross = self.wform.calculate_strain_polarisations(f_default, Theta_default)
+        h_tilde_plus, h_tilde_cross = self.model.calculate_strain_polarisations(f_default, Theta_default)
 
         assert h_tilde_plus.shape == f_default.shape
         assert h_tilde_cross.shape == f_default.shape
@@ -98,7 +98,7 @@ class TestNewtonianWaveform:
         self, f_default: numpy.typing.NDArray[numpy.float64], Theta_default: waveform.SignalParameters
     ) -> None:
         """Test that output arrays have the correct type."""
-        h_tilde_plus, h_tilde_cross = self.wform.calculate_strain_polarisations(f_default, Theta_default)
+        h_tilde_plus, h_tilde_cross = self.model.calculate_strain_polarisations(f_default, Theta_default)
 
         assert h_tilde_plus.dtype == numpy.complex128
         assert h_tilde_cross.dtype == numpy.complex128
@@ -107,7 +107,7 @@ class TestNewtonianWaveform:
         """Test that the waveform is zero above the innermost stable circular orbit frequency."""
         f_ISCO = waveform.calculate_innermost_stable_circular_orbit_frequency(Theta_default.M)
         f = numpy.linspace(f_ISCO + 1, f_ISCO + 100, 20)
-        h_tilde_plus, h_tilde_cross = self.wform.calculate_strain_polarisations(f, Theta_default)
+        h_tilde_plus, h_tilde_cross = self.model.calculate_strain_polarisations(f, Theta_default)
 
         assert numpy.allclose(h_tilde_plus, 0, RTOL, ATOL)
         assert numpy.allclose(h_tilde_cross, 0, RTOL, ATOL)
@@ -116,7 +116,7 @@ class TestNewtonianWaveform:
         """Test that the waveform is non-zero up to the innermost stable circular orbit frequency."""
         f_ISCO = waveform.calculate_innermost_stable_circular_orbit_frequency(Theta_default.M)
         f = numpy.linspace(20, f_ISCO, 20)
-        h_tilde_plus, h_tilde_cross = self.wform.calculate_strain_polarisations(f, Theta_default)
+        h_tilde_plus, h_tilde_cross = self.model.calculate_strain_polarisations(f, Theta_default)
 
         assert not numpy.allclose(h_tilde_plus, 0, RTOL, ATOL)
         assert not numpy.allclose(h_tilde_cross, 0, RTOL, ATOL)
@@ -126,7 +126,7 @@ class TestNewtonianWaveform:
     ) -> None:
         """Test waveform when the orbit is edge on."""
         Theta = replace(Theta_default, iota=numpy.pi / 2)
-        h_tilde_plus, h_tilde_cross = self.wform.calculate_strain_polarisations(f_default, Theta)
+        h_tilde_plus, h_tilde_cross = self.model.calculate_strain_polarisations(f_default, Theta)
 
         assert not numpy.allclose(h_tilde_plus, 0, RTOL, ATOL)
         assert numpy.allclose(h_tilde_cross, 0, RTOL, ATOL)
@@ -136,7 +136,7 @@ class TestNewtonianWaveform:
     ) -> None:
         """Test waveform when the orbit is face on."""
         Theta = replace(Theta_default, iota=0)
-        h_tilde_plus, h_tilde_cross = self.wform.calculate_strain_polarisations(f_default, Theta)
+        h_tilde_plus, h_tilde_cross = self.model.calculate_strain_polarisations(f_default, Theta)
 
         assert numpy.allclose(abs(h_tilde_plus), abs(h_tilde_cross), RTOL, ATOL)
 
@@ -144,7 +144,7 @@ class TestNewtonianWaveform:
         self, f_default: numpy.typing.NDArray[numpy.float64], Theta_default: waveform.SignalParameters
     ) -> None:
         """Test that amplitude decreases with increasing frequency."""
-        h_tilde_plus, _ = self.wform.calculate_strain_polarisations(f_default, Theta_default)
+        h_tilde_plus, _ = self.model.calculate_strain_polarisations(f_default, Theta_default)
         A = abs(h_tilde_plus)
 
         assert A[0] > A[-1]
@@ -157,8 +157,8 @@ class TestNewtonianWaveform:
         r = 500e6 * waveform.pc
         Theta_near = replace(Theta_default, r=r)
         Theta_far = replace(Theta_default, r=ratio * r)
-        h_tilde_plus_near, _ = self.wform.calculate_strain_polarisations(f_default, Theta_near)
-        h_tilde_plus_far, _ = self.wform.calculate_strain_polarisations(f_default, Theta_far)
+        h_tilde_plus_near, _ = self.model.calculate_strain_polarisations(f_default, Theta_near)
+        h_tilde_plus_far, _ = self.model.calculate_strain_polarisations(f_default, Theta_far)
         ratio_calculated = abs(h_tilde_plus_near) / abs(h_tilde_plus_far)
 
         assert numpy.all(ratio == ratio_calculated)
@@ -166,7 +166,7 @@ class TestNewtonianWaveform:
     def test_single_frequency(self, Theta_default: waveform.SignalParameters) -> None:
         """Test with a single frequency value."""
         f = numpy.array([40], dtype=numpy.float64)
-        h_tilde_plus, h_tilde_cross = self.wform.calculate_strain_polarisations(f, Theta_default)
+        h_tilde_plus, h_tilde_cross = self.model.calculate_strain_polarisations(f, Theta_default)
 
         assert h_tilde_plus.shape == (1,)
         assert h_tilde_cross.shape == (1,)
