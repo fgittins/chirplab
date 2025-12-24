@@ -28,8 +28,7 @@ class Grid:
 
     def __post_init__(self) -> None:
         """Validate parameters after initialisation."""
-        N_float = self.T * self.f_s
-        if not N_float.is_integer():
+        if not (self.T * self.f_s).is_integer():
             msg = "The product of T and f_s must be an integer."
             raise ValueError(msg)
 
@@ -138,9 +137,8 @@ class Interferometer:
             if rng is None:
                 rng = numpy.random.default_rng()
 
-            n_tilde_white = generate_white_noise(self.grid, rng)
-
-            self.n_tilde = self.S_n ** (1 / 2) * n_tilde_white[self.in_bounds_mask]
+            w_tilde = generate_white_noise(self.grid, rng)
+            self.n_tilde = self.S_n ** (1 / 2) * w_tilde[self.in_bounds_mask]
 
         self.d_tilde = self.n_tilde.copy()
 
@@ -277,8 +275,12 @@ def generate_white_noise(grid: Grid, rng: numpy.random.Generator) -> numpy.typin
 
     Returns
     -------
-    n_tilde
-        Frequency-domain white noise (Hz^-1).
+    w_tilde
+        Frequency-domain white noise (Hz^-1/2).
+
+    Notes
+    -----
+    The produced white noise is normalised to be coloured by a given power spectral density.
     """
     sigma = 1 / 2 * grid.T ** (1 / 2)
 
@@ -286,7 +288,7 @@ def generate_white_noise(grid: Grid, rng: numpy.random.Generator) -> numpy.typin
     im: numpy.typing.NDArray[numpy.floating]
     re, im = rng.normal(0, sigma, (2, grid.M + 1))
 
-    n_tilde = re + 1j * im
-    n_tilde[0] = 0
-    n_tilde[-1] = 0
-    return n_tilde
+    w_tilde = re + 1j * im
+    w_tilde[0] = 0
+    w_tilde[-1] = 0
+    return w_tilde
