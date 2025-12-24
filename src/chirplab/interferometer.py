@@ -103,9 +103,8 @@ class Interferometer:
         f_min_sens, f_max_sens = band
 
         # NOTE: restrict to sensitivity band
-        self.in_bounds_mask = (f_min_sens <= grid.f) & (grid.f <= f_max_sens)
-        self.f = grid.f[self.in_bounds_mask]
-        self.Delta_f = grid.Delta_f
+        in_bounds_mask = (f_min_sens <= grid.f) & (grid.f <= f_max_sens)
+        self.f = grid.f[in_bounds_mask]
 
         f_data, amplitude_spectral_density_data = numpy.loadtxt(
             amplitude_spectral_density_file, numpy.float64, unpack=True
@@ -137,8 +136,7 @@ class Interferometer:
             if rng is None:
                 rng = numpy.random.default_rng()
 
-            w_tilde = generate_white_noise(self.grid, rng)
-            self.n_tilde = self.S_n ** (1 / 2) * w_tilde[self.in_bounds_mask]
+            self.n_tilde = generate_stationary_noise(self.S_n, self.grid.T, rng)
 
         self.d_tilde = self.n_tilde.copy()
 
@@ -189,7 +187,7 @@ class Interferometer:
         inner_product
             Inner product.
         """
-        return calculate_inner_product(a_tilde, b_tilde, self.S_n, self.Delta_f)
+        return calculate_inner_product(a_tilde, b_tilde, self.S_n, self.grid.Delta_f)
 
     def inject(self, model: waveform.Waveform, Theta: waveform.SignalParameters) -> None:
         """
@@ -262,33 +260,41 @@ def calculate_inner_product(
     return 4 * integral
 
 
-def generate_white_noise(grid: Grid, rng: numpy.random.Generator) -> numpy.typing.NDArray[numpy.complexfloating]:
+def generate_stationary_noise(
+    S_n: numpy.typing.NDArray[numpy.floating], T: float, rng: numpy.random.Generator
+) -> numpy.typing.NDArray[numpy.complex128]:
     """
-    Generate frequency-domain white noise on the given grid.
+    Generate frequency-domain stationary noise.
 
     Parameters
     ----------
-    grid
-        Grid for signal sampling.
+    S_n
+        Noise power spectral density (Hz^-1).
+    T
+        Duration of the signal (s).
     rng
         Random number generator.
 
     Returns
     -------
-    w_tilde
-        Frequency-domain white noise (Hz^-1/2).
+    n_tilde
+        Frequency-domain stationary noise (Hz^-1).
 
     Notes
     -----
-    The produced white noise is normalised to be coloured by a given power spectral density.
+    The generated noise realisation has zero mean and covariance consistent with the provided power spectral density.
+    See Eqs. (7.7) and (7.9) of Ref. [1].
+
+    References
+    ----------
+    [1]  M. Maggiore, Gravitational Waves. Volume 1: Theory and Experiments, (Oxford University Press, 2008).
     """
-    sigma = 1 / 2 * grid.T ** (1 / 2)
+    x: numpy.typing.NDArray[numpy.float64]
+    x = rng.standard_normal((2, S_n.size)) * (1 / 2) ** (1 / 2)
 
-    re: numpy.typing.NDArray[numpy.floating]
-    im: numpy.typing.NDArray[numpy.floating]
-    re, im = rng.normal(0, sigma, (2, grid.M + 1))
+    sigma = (1 / 2 * S_n * T) ** (1 / 2)
 
-    w_tilde = re + 1j * im
-    w_tilde[0] = 0
-    w_tilde[-1] = 0
-    return w_tilde
+    n_tilde: numpy.typing.NDArray[numpy.complex128] = (x[0] + 1j * x[1]) * sigma
+    n_tilde[0] = 0
+    n_tilde[-1] = 0
+    return n_tilde
