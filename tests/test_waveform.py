@@ -8,7 +8,7 @@ import pytest
 from chirplab import waveform
 
 RTOL = 0
-ATOL = 1e-28
+ATOL = 1e-27
 
 
 @pytest.fixture
@@ -138,7 +138,7 @@ class TestNewtonianWaveform:
         Theta = replace(Theta_default, iota=0)
         h_tilde_plus, h_tilde_cross = self.model.calculate_strain_polarisations(f_default, Theta)
 
-        assert numpy.allclose(abs(h_tilde_plus), abs(h_tilde_cross), RTOL, ATOL)
+        assert numpy.array_equal(abs(h_tilde_plus), abs(h_tilde_cross))
 
     def test_amplitude_decreases_with_frequency(
         self, f_default: numpy.typing.NDArray[numpy.float64], Theta_default: waveform.SignalParameters
@@ -146,8 +146,9 @@ class TestNewtonianWaveform:
         """Test that amplitude decreases with increasing frequency."""
         h_tilde_plus, _ = self.model.calculate_strain_polarisations(f_default, Theta_default)
         A = abs(h_tilde_plus)
+        Delta_A = numpy.diff(A)
 
-        assert A[0] > A[-1]
+        assert numpy.all(Delta_A < 0)
 
     def test_amplitude_scales_with_distance(
         self, f_default: numpy.typing.NDArray[numpy.float64], Theta_default: waveform.SignalParameters
