@@ -16,6 +16,8 @@ build-backend = "uv_build"
 dev = [
     "mypy>=1.19.1",
     "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
     "ruff>=0.14.10",
 ]
 
@@ -32,8 +34,8 @@ lint.select = [
     "PLR",      # Pylint Refactor
     "UP",       # pyupgrade
 ]
-# formatting conflicts
 lint.ignore = [
+    # formatting conflicts
     # pycodestyle
     "W191",
     "E111",
@@ -56,6 +58,14 @@ lint.ignore = [
 ]
 lint.pycodestyle.max-doc-length = 120
 lint.pydocstyle.convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    # flake8-simplify
+    "SIM300",
+    # Pylint Refactor
+    "PLR2004",
+]
 
 [tool.mypy]
 strict = true

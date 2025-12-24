@@ -10,8 +10,10 @@ wheels/
 .venv
 
 .mypy_cache/
+.pytest_cache/
 .ruff_cache/
 .vscode/
 
-*.lock
+.coverage
 .python-version
+*.lock
