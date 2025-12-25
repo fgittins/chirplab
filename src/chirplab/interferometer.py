@@ -165,7 +165,7 @@ class Interferometer:
             if rng is None:
                 rng = numpy.random.default_rng()
 
-            self.n_tilde = generate_stationary_noise(self.S_n, self.grid.T, rng)
+            self.n_tilde = generate_gaussian_noise(self.S_n, self.grid.T, rng)
 
         self.d_tilde = self.n_tilde.copy()
 
@@ -316,11 +316,11 @@ def calculate_inner_product(
     return 4 * integral
 
 
-def generate_stationary_noise(
+def generate_gaussian_noise(
     S_n: numpy.typing.NDArray[numpy.floating], T: float, rng: numpy.random.Generator
 ) -> numpy.typing.NDArray[numpy.complex128]:
     """
-    Generate frequency-domain stationary noise.
+    Generate frequency-domain Gaussian noise.
 
     Parameters
     ----------
@@ -334,7 +334,7 @@ def generate_stationary_noise(
     Returns
     -------
     n_tilde
-        Frequency-domain stationary noise (Hz^-1).
+        Frequency-domain Gaussian noise (Hz^-1).
 
     Notes
     -----

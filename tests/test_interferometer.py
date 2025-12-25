@@ -372,15 +372,15 @@ class TestCalculateInnerProduct:
             interferometer.calculate_inner_product(a_tilde, b_tilde, S_n, Delta_f)
 
 
-class TestGenerateStationaryNoise:
-    """Tests for the `generate_stationary_noise` function."""
+class TestGenerateGaussianNoise:
+    """Tests for the `generate_gaussian_noise` function."""
 
     def test_noise_shape(self) -> None:
         """Test that generated noise has correct shape."""
         S_n = numpy.ones(100, dtype=numpy.float64)
         T = 4
         rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_stationary_noise(S_n, T, rng)
+        n_tilde = interferometer.generate_gaussian_noise(S_n, T, rng)
 
         assert n_tilde.shape == S_n.shape
 
@@ -389,7 +389,7 @@ class TestGenerateStationaryNoise:
         S_n = numpy.ones(100, dtype=numpy.float64)
         T = 4
         rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_stationary_noise(S_n, T, rng)
+        n_tilde = interferometer.generate_gaussian_noise(S_n, T, rng)
 
         assert n_tilde.dtype == numpy.complex128
 
@@ -398,7 +398,7 @@ class TestGenerateStationaryNoise:
         S_n = numpy.ones(100, dtype=numpy.float64)
         T = 4
         rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_stationary_noise(S_n, T, rng)
+        n_tilde = interferometer.generate_gaussian_noise(S_n, T, rng)
 
         assert n_tilde[0] == 0
         assert n_tilde[-1] == 0
@@ -408,9 +408,9 @@ class TestGenerateStationaryNoise:
         S_n = numpy.ones(100, dtype=numpy.float64)
         T = 4
         rng_1 = numpy.random.default_rng(42)
-        n_tilde_1 = interferometer.generate_stationary_noise(S_n, T, rng_1)
+        n_tilde_1 = interferometer.generate_gaussian_noise(S_n, T, rng_1)
         rng_2 = numpy.random.default_rng(42)
-        n_tilde_2 = interferometer.generate_stationary_noise(S_n, T, rng_2)
+        n_tilde_2 = interferometer.generate_gaussian_noise(S_n, T, rng_2)
 
         assert numpy.array_equal(n_tilde_1, n_tilde_2)
 
@@ -419,9 +419,9 @@ class TestGenerateStationaryNoise:
         S_n = numpy.ones(100, dtype=numpy.float64)
         T = 4
         rng_1 = numpy.random.default_rng(42)
-        n_tilde_1 = interferometer.generate_stationary_noise(S_n, T, rng_1)
+        n_tilde_1 = interferometer.generate_gaussian_noise(S_n, T, rng_1)
         rng_2 = numpy.random.default_rng(43)
-        n_tilde_2 = interferometer.generate_stationary_noise(S_n, T, rng_2)
+        n_tilde_2 = interferometer.generate_gaussian_noise(S_n, T, rng_2)
 
         assert not numpy.array_equal(n_tilde_1, n_tilde_2)
 
@@ -431,10 +431,10 @@ class TestGenerateStationaryNoise:
         T = 4
         rng_1 = numpy.random.default_rng(42)
         S_n_1 = numpy.ones(100, dtype=numpy.float64)
-        n_tilde_1 = interferometer.generate_stationary_noise(S_n_1, T, rng_1)
+        n_tilde_1 = interferometer.generate_gaussian_noise(S_n_1, T, rng_1)
         rng_2 = numpy.random.default_rng(42)
         S_n_2 = ratio * S_n_1
-        n_tilde_2 = interferometer.generate_stationary_noise(S_n_2, T, rng_2)
+        n_tilde_2 = interferometer.generate_gaussian_noise(S_n_2, T, rng_2)
         ratio_calculated = numpy.abs(n_tilde_2[1:-2]) / numpy.abs(n_tilde_1[1:-2])
 
         assert numpy.allclose(ratio_calculated, ratio ** (1 / 2))
@@ -444,9 +444,9 @@ class TestGenerateStationaryNoise:
         S_n = numpy.ones(100, dtype=numpy.float64)
         T_1, T_2 = 4, 16
         rng_1 = numpy.random.default_rng(42)
-        n_tilde_1 = interferometer.generate_stationary_noise(S_n, T_1, rng_1)
+        n_tilde_1 = interferometer.generate_gaussian_noise(S_n, T_1, rng_1)
         rng_2 = numpy.random.default_rng(42)
-        n_tilde_2 = interferometer.generate_stationary_noise(S_n, T_2, rng_2)
+        n_tilde_2 = interferometer.generate_gaussian_noise(S_n, T_2, rng_2)
         ratio_calculated = numpy.abs(n_tilde_2[1:-2]) / numpy.abs(n_tilde_1[1:-2])
 
         assert numpy.allclose(ratio_calculated, (T_2 / T_1) ** (1 / 2))
