@@ -22,7 +22,7 @@ class Likelihood:
     Notes
     -----
     The likelihood is taken to be a Gaussian probability distribution. This follows from the hypothesis that a signal is
-    present in the data and buried within stationary, Gaussian noise.
+    present in the data and buried within Gaussian noise.
     """
 
     def __init__(self, interferometer: interferometer.Interferometer, model: waveform.WaveformModel) -> None:
@@ -45,7 +45,8 @@ class Likelihood:
 
         Notes
         -----
-        Irrelevant additive constants have been omitted.
+        Irrelevant additive constants have been omitted. Under the gravitational-wave signal hypothesis, the collected
+        data is given by the sum of a gravitational-wave signal and noise, which is assumed to be Gaussian.
         """
         h_tilde = self.interferometer.calculate_strain(self.model, Theta)
         n_tilde = self.interferometer.d_tilde - h_tilde
@@ -55,11 +56,12 @@ class Likelihood:
     @property
     def ln_L_noise(self) -> numpy.float64:
         """
-        Log-likelihood of the noise-only hypothesis.
+        Log-likelihood of the noise hypothesis.
 
         Notes
         -----
-        Irrelevant additive constants have been omitted.
+        Irrelevant additive constants have been omitted. Under the noise hypothesis, the collected data is explained by
+        noise, which is assumed to be Gaussian.
         """
         n_tilde = self.interferometer.d_tilde
         n_inner_n = self.interferometer.calculate_inner_product(n_tilde, n_tilde).real
