@@ -67,23 +67,23 @@ class TestSignalParameters:
         assert Theta.M_chirp == M_chirp
 
 
-class TestWaveform:
-    """Tests for the `Waveform` base class."""
+class TestWaveformModel:
+    """Tests for the `WaveformModel` base class."""
 
     def test_base_class_not_implemented(
         self, f_default: numpy.typing.NDArray[numpy.float64], Theta_default: waveform.SignalParameters
     ) -> None:
-        """Test that the base `Waveform` class raises `NotImplementedError`."""
-        model = waveform.Waveform()
+        """Test that the base `WaveformModel` class raises `NotImplementedError`."""
+        model = waveform.WaveformModel()
 
         with pytest.raises(NotImplementedError):
             model.calculate_strain_polarisations(f_default, Theta_default)
 
 
-class TestNewtonianWaveform:
-    """Tests for the `NewtonianWaveform` class."""
+class TestNewtonianWaveformModel:
+    """Tests for the `NewtonianWaveformModel` class."""
 
-    model = waveform.NewtonianWaveform()
+    model = waveform.NewtonianWaveformModel()
 
     def test_output_shape(
         self, f_default: numpy.typing.NDArray[numpy.float64], Theta_default: waveform.SignalParameters

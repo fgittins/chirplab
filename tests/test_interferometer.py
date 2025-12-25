@@ -35,9 +35,9 @@ def Theta_default() -> waveform.SignalParameters:
 
 
 @pytest.fixture
-def model_default() -> waveform.Waveform:
+def model_default() -> waveform.WaveformModel:
     """Return default waveform model for testing."""
-    return waveform.NewtonianWaveform()
+    return waveform.NewtonianWaveformModel()
 
 
 class TestGrid:
@@ -225,7 +225,7 @@ class TestInterferometer:
         self,
         grid_default: interferometer.Grid,
         amplitude_spectral_density_file_default: Path,
-        model_default: waveform.Waveform,
+        model_default: waveform.WaveformModel,
         Theta_default: waveform.SignalParameters,
     ) -> None:
         """Test signal injection into interferometer."""
@@ -241,7 +241,7 @@ class TestInterferometer:
         self,
         grid_default: interferometer.Grid,
         amplitude_spectral_density_file_default: Path,
-        model_default: waveform.Waveform,
+        model_default: waveform.WaveformModel,
         Theta_default: waveform.SignalParameters,
     ) -> None:
         """Test that signal injection updates data stream."""
@@ -257,7 +257,7 @@ class TestInterferometer:
         self,
         grid_default: interferometer.Grid,
         amplitude_spectral_density_file_default: Path,
-        model_default: waveform.Waveform,
+        model_default: waveform.WaveformModel,
         Theta_default: waveform.SignalParameters,
     ) -> None:
         """Test matched filter signal-to-noise ratio equals optimal signal-to-noise ratio for zero noise."""
@@ -299,7 +299,7 @@ class TestLIGO:
     def test_inject_signal(
         self,
         grid_default: interferometer.Grid,
-        model_default: waveform.Waveform,
+        model_default: waveform.WaveformModel,
         Theta_default: waveform.SignalParameters,
     ) -> None:
         """Test signal injection into LIGO."""

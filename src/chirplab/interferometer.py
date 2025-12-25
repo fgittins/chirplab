@@ -189,7 +189,7 @@ class Interferometer:
         """
         return calculate_inner_product(a_tilde, b_tilde, self.S_n, self.grid.Delta_f)
 
-    def inject(self, model: waveform.Waveform, Theta: waveform.SignalParameters) -> None:
+    def inject(self, model: waveform.WaveformModel, Theta: waveform.SignalParameters) -> None:
         """
         Inject gravitational-wave signal into the interferometer.
 

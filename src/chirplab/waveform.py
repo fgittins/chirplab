@@ -61,8 +61,8 @@ class SignalParameters:
         return M_chirp
 
 
-class Waveform:
-    """Gravitational-waveform base class."""
+class WaveformModel:
+    """Gravitational-waveform model base class."""
 
     def calculate_strain_polarisations(
         self, f: numpy.typing.NDArray[numpy.floating], Theta: SignalParameters
@@ -88,8 +88,8 @@ class Waveform:
         raise NotImplementedError(msg)
 
 
-class NewtonianWaveform(Waveform):
-    """Gravitational waveform using the leading-order Newtonian approximation."""
+class NewtonianWaveformModel(WaveformModel):
+    """Gravitational-waveform model using the leading-order Newtonian approximation."""
 
     @staticmethod
     def calculate_strain_polarisations(
