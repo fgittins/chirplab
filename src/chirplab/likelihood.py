@@ -45,8 +45,10 @@ class Likelihood:
 
         Notes
         -----
-        Irrelevant additive constants have been omitted. Under the gravitational-wave signal hypothesis, the collected
-        data is given by the sum of a gravitational-wave signal and noise, which is assumed to be Gaussian.
+        Irrelevant additive constants have been omitted.
+
+        Under the gravitational-wave signal hypothesis, the collected data is given by the sum of a gravitational-wave
+        signal and noise, which is assumed to be Gaussian.
         """
         h_tilde = self.interferometer.calculate_strain(self.model, Theta)
         n_tilde = self.interferometer.d_tilde - h_tilde
@@ -60,8 +62,9 @@ class Likelihood:
 
         Notes
         -----
-        Irrelevant additive constants have been omitted. Under the noise hypothesis, the collected data is explained by
-        noise, which is assumed to be Gaussian.
+        Irrelevant additive constants have been omitted.
+
+        Under the noise hypothesis, the collected data is explained by noise alone, which is assumed to be Gaussian.
         """
         n_tilde = self.interferometer.d_tilde
         n_inner_n = self.interferometer.calculate_inner_product(n_tilde, n_tilde).real
