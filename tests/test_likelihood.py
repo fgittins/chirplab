@@ -1,7 +1,6 @@
 """Unit tests for the likelihood module."""
 
 from dataclasses import replace
-from pathlib import Path
 
 import numpy
 import pytest
@@ -10,12 +9,12 @@ from chirplab import interferometer, likelihood, waveform
 
 
 @pytest.fixture
-def interferometer_default(
+def injected_interferometer_default(
     grid_default: interferometer.Grid,
     model_default: waveform.WaveformModel,
     Theta_default: interferometer.SignalParameters,
 ) -> interferometer.Interferometer:
-    """Return default interferometer for testing."""
+    """Return default injected interferometer for testing."""
     rng = numpy.random.default_rng(42)
     ifo = interferometer.LIGO(grid_default, rng=rng)
     ifo.inject(model_default, Theta_default)
@@ -24,10 +23,10 @@ def interferometer_default(
 
 @pytest.fixture
 def likelihood_default(
-    interferometer_default: interferometer.Interferometer, model_default: waveform.WaveformModel
+    injected_interferometer_default: interferometer.Interferometer, model_default: waveform.WaveformModel
 ) -> likelihood.Likelihood:
     """Return default likelihood object for testing."""
-    return likelihood.Likelihood(interferometer_default, model_default)
+    return likelihood.Likelihood(injected_interferometer_default, model_default)
 
 
 class TestLikelihood:
@@ -37,10 +36,10 @@ class TestLikelihood:
         self,
         likelihood_default: likelihood.Likelihood,
         model_default: waveform.WaveformModel,
-        interferometer_default: interferometer.Interferometer,
+        injected_interferometer_default: interferometer.Interferometer,
     ) -> None:
         """Test that `Likelihood` can be initialised with an interferometer and waveform model."""
-        assert likelihood_default.interferometer == interferometer_default
+        assert likelihood_default.interferometer == injected_interferometer_default
         assert likelihood_default.model == model_default
 
     def test_log_likelihood_noise_is_real(self, likelihood_default: likelihood.Likelihood) -> None:
