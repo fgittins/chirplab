@@ -11,9 +11,9 @@ pc = 3.085677581491367e16
 
 
 @dataclass
-class SignalParameters:
+class WaveformParameters:
     """
-    Parameters of the gravitational-wave signal.
+    Parameters of the gravitational waveform.
 
     Parameters
     ----------
@@ -29,12 +29,6 @@ class SignalParameters:
         Coalescence time (s).
     Phi_c
         Coalescence phase (rad).
-    theta
-        Polar angle of the binary in the detector frame (rad).
-    phi
-        Azimuthal angle of the binary in the detector frame (rad).
-    psi
-        Polarisation angle of the binary in the detector frame (rad).
     """
 
     m_1: float
@@ -43,11 +37,6 @@ class SignalParameters:
     iota: float
     t_c: float
     Phi_c: float
-
-    # NOTE: pattern function angles
-    theta: float
-    phi: float
-    psi: float
 
     @property
     def M(self) -> float:
@@ -65,7 +54,7 @@ class WaveformModel:
     """Gravitational-waveform model base class."""
 
     def calculate_strain_polarisations(
-        self, f: numpy.typing.NDArray[numpy.floating], Theta: SignalParameters
+        self, f: numpy.typing.NDArray[numpy.floating], Theta: WaveformParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.
@@ -93,7 +82,7 @@ class NewtonianWaveformModel(WaveformModel):
 
     @staticmethod
     def calculate_strain_polarisations(
-        f: numpy.typing.NDArray[numpy.floating], Theta: SignalParameters
+        f: numpy.typing.NDArray[numpy.floating], Theta: WaveformParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.

@@ -19,9 +19,9 @@ def grid_default() -> interferometer.Grid:
 
 
 @pytest.fixture
-def Theta_default() -> waveform.SignalParameters:
+def Theta_default() -> interferometer.SignalParameters:
     """Return default set of signal parameters for testing."""
-    return waveform.SignalParameters(
+    return interferometer.SignalParameters(
         m_1=30 * waveform.M_sun,
         m_2=30 * waveform.M_sun,
         r=500e6 * waveform.pc,
@@ -227,7 +227,7 @@ class TestInterferometer:
         grid_default: interferometer.Grid,
         amplitude_spectral_density_file_default: Path,
         model_default: waveform.WaveformModel,
-        Theta_default: waveform.SignalParameters,
+        Theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test signal injection into interferometer."""
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, (1, numpy.inf))
@@ -243,7 +243,7 @@ class TestInterferometer:
         grid_default: interferometer.Grid,
         amplitude_spectral_density_file_default: Path,
         model_default: waveform.WaveformModel,
-        Theta_default: waveform.SignalParameters,
+        Theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test that signal injection updates data stream."""
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, (1, numpy.inf))
@@ -259,7 +259,7 @@ class TestInterferometer:
         grid_default: interferometer.Grid,
         amplitude_spectral_density_file_default: Path,
         model_default: waveform.WaveformModel,
-        Theta_default: waveform.SignalParameters,
+        Theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test matched filter signal-to-noise ratio equals optimal signal-to-noise ratio for zero noise."""
         ifo = interferometer.Interferometer(
@@ -301,7 +301,7 @@ class TestLIGO:
         self,
         grid_default: interferometer.Grid,
         model_default: waveform.WaveformModel,
-        Theta_default: waveform.SignalParameters,
+        Theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test signal injection into LIGO."""
         ligo = interferometer.LIGO(grid_default)

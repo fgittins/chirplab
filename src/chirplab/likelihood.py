@@ -29,7 +29,7 @@ class Likelihood:
         self.interferometer = interferometer
         self.model = model
 
-    def calculate_log_likelihood(self, Theta: waveform.SignalParameters) -> numpy.float64:
+    def calculate_log_likelihood(self, Theta: interferometer.SignalParameters) -> numpy.float64:
         """
         Calculate the log-likelihood as a function of the gravitational-wave signal parameters.
 

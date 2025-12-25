@@ -11,6 +11,38 @@ PWD = Path(__file__).parent
 
 
 @dataclass
+class SignalParameters(waveform.WaveformParameters):
+    """
+    Parameters of the gravitational-wave signal as measured by the detector.
+
+    Parameters
+    ----------
+    m_1
+        Mass of the first component in the binary (kg).
+    m_2
+        Mass of the second component in the binary (kg).
+    r
+        Luminosity distance to the binary (m).
+    iota
+        Inclination angle of the binary (rad).
+    t_c
+        Coalescence time (s).
+    Phi_c
+        Coalescence phase (rad).
+    theta
+        Polar angle of the binary in the detector frame (rad).
+    phi
+        Azimuthal angle of the binary in the detector frame (rad).
+    psi
+        Polarisation angle of the binary in the detector frame (rad).
+    """
+
+    theta: float
+    phi: float
+    psi: float
+
+
+@dataclass
 class Grid:
     """
     Grid for signal sampling.
@@ -167,7 +199,7 @@ class Interferometer:
         return F_plus, F_cross
 
     def calculate_strain(
-        self, model: waveform.WaveformModel, Theta: waveform.SignalParameters
+        self, model: waveform.WaveformModel, Theta: SignalParameters
     ) -> numpy.typing.NDArray[numpy.complex128]:
         """
         Calculate the frequency-domain strain response in the interferometer.
@@ -188,7 +220,7 @@ class Interferometer:
         F_plus, F_cross = self.calculate_pattern_functions(Theta.theta, Theta.phi, Theta.psi)
         return h_tilde_plus * F_plus + h_tilde_cross * F_cross
 
-    def inject(self, model: waveform.WaveformModel, Theta: waveform.SignalParameters) -> None:
+    def inject(self, model: waveform.WaveformModel, Theta: SignalParameters) -> None:
         """
         Inject gravitational-wave signal into the interferometer.
 
