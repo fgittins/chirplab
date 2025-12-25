@@ -12,6 +12,12 @@ RTOL = 0
 ATOL = 1e-27
 
 
+@pytest.fixture
+def S_n_default() -> numpy.typing.NDArray[numpy.float64]:
+    """Return default power spectral density for testing."""
+    return numpy.ones(100, dtype=numpy.float64)
+
+
 class TestGrid:
     """Tests for the `Grid` dataclass."""
 
@@ -226,7 +232,7 @@ class TestInterferometer:
         assert ifo.h_tilde is not None
         assert numpy.array_equal(ifo.d_tilde, d_tilde_before + ifo.h_tilde)
 
-    def test_inject_signal_matched_filter_snr(
+    def test_inject_signal_matched_filter_signal_to_noise_ratio(
         self,
         grid_default: interferometer.Grid,
         amplitude_spectral_density_file_default: Path,
@@ -287,122 +293,114 @@ class TestLIGO:
 class TestCalculateInnerProduct:
     """Tests for the `calculate_inner_product` function."""
 
-    def test_inner_product_shape(self) -> None:
+    def test_inner_product_shape(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that inner product returns a scalar."""
         N = 100
-        a_tilde = numpy.ones(N, dtype=numpy.complex128)
-        b_tilde = numpy.ones(N, dtype=numpy.complex128)
-        S_n = numpy.ones(N, dtype=numpy.float64)
+        a_tilde = numpy.ones(N, dtype=numpy.float64) * (1 + 1j)
+        b_tilde = numpy.ones(N, dtype=numpy.float64) * (1 + 1j)
         Delta_f = 1 / 4
-        a_inner_b = interferometer.calculate_inner_product(a_tilde, b_tilde, S_n, Delta_f)
+        a_inner_b = interferometer.calculate_inner_product(a_tilde, b_tilde, S_n_default, Delta_f)
 
         assert a_inner_b.dtype == numpy.complex128
 
-    def test_inner_product_self_is_real(self) -> None:
+    def test_inner_product_self_is_real(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that inner product of signal with itself is real."""
         N = 100
-        a_tilde = numpy.random.randn(N) + 1j * numpy.random.randn(N)
-        S_n = numpy.ones(N, dtype=numpy.float64)
+        rng = numpy.random.default_rng(42)
+        a_tilde = rng.standard_normal(N) + 1j * rng.standard_normal(N)
         Delta_f = 1 / 4
-        a_inner_a = interferometer.calculate_inner_product(a_tilde, a_tilde, S_n, Delta_f)
+        a_inner_a = interferometer.calculate_inner_product(a_tilde, a_tilde, S_n_default, Delta_f)
 
         assert numpy.isclose(a_inner_a.imag, 0)
 
-    def test_inner_product_conjugate_symmetry(self) -> None:
+    def test_inner_product_conjugate_symmetry(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that inner product satisfies conjugate symmetry."""
         N = 100
-        a_tilde = numpy.random.randn(N) + 1j * numpy.random.randn(N)
-        b_tilde = numpy.random.randn(N) + 1j * numpy.random.randn(N)
-        S_n = numpy.ones(N, dtype=numpy.float64)
+        rng = numpy.random.default_rng(42)
+        a_tilde = rng.standard_normal(N) + 1j * rng.standard_normal(N)
+        b_tilde = rng.standard_normal(N) + 1j * rng.standard_normal(N)
         Delta_f = 1 / 4
-        a_inner_b = interferometer.calculate_inner_product(a_tilde, b_tilde, S_n, Delta_f)
-        b_inner_a = interferometer.calculate_inner_product(b_tilde, a_tilde, S_n, Delta_f)
+        a_inner_b = interferometer.calculate_inner_product(a_tilde, b_tilde, S_n_default, Delta_f)
+        b_inner_a = interferometer.calculate_inner_product(b_tilde, a_tilde, S_n_default, Delta_f)
 
-        assert numpy.isclose(a_inner_b, b_inner_a.conj())
+        assert numpy.array_equal(a_inner_b, b_inner_a.conj())
 
-    def test_inner_product_scales_with_delta_f(self) -> None:
+    def test_inner_product_scales_with_delta_f(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that inner product scales linearly with frequency resolution."""
         N = 100
-        a_tilde = numpy.ones(N, dtype=numpy.complex128)
-        b_tilde = numpy.ones(N, dtype=numpy.complex128)
-        S_n = numpy.ones(N, dtype=numpy.float64)
+        a_tilde = numpy.ones(N, dtype=numpy.float64) * (1 + 1j)
+        b_tilde = numpy.ones(N, dtype=numpy.float64) * (1 + 1j)
         Delta_f_1, Delta_f_2 = 1 / 4, 1 / 2
-        a_inner_b_1 = interferometer.calculate_inner_product(a_tilde, b_tilde, S_n, Delta_f_1)
-        a_inner_b_2 = interferometer.calculate_inner_product(a_tilde, b_tilde, S_n, Delta_f_2)
+        a_inner_b_1 = interferometer.calculate_inner_product(a_tilde, b_tilde, S_n_default, Delta_f_1)
+        a_inner_b_2 = interferometer.calculate_inner_product(a_tilde, b_tilde, S_n_default, Delta_f_2)
 
-        assert numpy.isclose(a_inner_b_2 / a_inner_b_1, Delta_f_2 / Delta_f_1)
+        assert a_inner_b_2 / a_inner_b_1 == Delta_f_2 / Delta_f_1
 
-    def test_inner_product_size_mismatch_raises(self) -> None:
+    def test_inner_product_size_mismatch_raises(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that inner product raises assertion error for mismatched sizes."""
         N = 100
-        a_tilde = numpy.ones(N, dtype=numpy.complex128)
-        b_tilde = numpy.ones(N // 2, dtype=numpy.complex128)
-        S_n = numpy.ones(N, dtype=numpy.float64)
+        a_tilde = numpy.ones(N, dtype=numpy.float64) * (1 + 1j)
+        b_tilde = numpy.ones(N // 2, dtype=numpy.float64) * (1 + 1j)
         Delta_f = 1 / 4
 
         with pytest.raises(AssertionError):
-            interferometer.calculate_inner_product(a_tilde, b_tilde, S_n, Delta_f)
+            interferometer.calculate_inner_product(a_tilde, b_tilde, S_n_default, Delta_f)
 
 
 class TestGenerateGaussianNoise:
     """Tests for the `generate_gaussian_noise` function."""
 
-    def test_noise_shape(self) -> None:
+    def test_noise_shape(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that generated noise has correct shape."""
-        S_n = numpy.ones(100, dtype=numpy.float64)
         T = 4
         rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_gaussian_noise(S_n, T, rng)
+        n_tilde = interferometer.generate_gaussian_noise(S_n_default, T, rng)
 
-        assert n_tilde.shape == S_n.shape
+        assert n_tilde.shape == S_n_default.shape
 
-    def test_noise_dtype(self) -> None:
+    def test_noise_dtype(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that generated noise has correct dtype."""
-        S_n = numpy.ones(100, dtype=numpy.float64)
         T = 4
         rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_gaussian_noise(S_n, T, rng)
+        n_tilde = interferometer.generate_gaussian_noise(S_n_default, T, rng)
 
         assert n_tilde.dtype == numpy.complex128
 
-    def test_noise_endpoints_zero(self) -> None:
+    def test_noise_endpoints_zero(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that noise is zero at direct-current and Nyquist frequencies."""
-        S_n = numpy.ones(100, dtype=numpy.float64)
         T = 4
         rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_gaussian_noise(S_n, T, rng)
+        n_tilde = interferometer.generate_gaussian_noise(S_n_default, T, rng)
 
         assert n_tilde[0] == 0
         assert n_tilde[-1] == 0
 
-    def test_noise_reproducible(self) -> None:
+    def test_noise_reproducible(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that noise is reproducible with same seed."""
-        S_n = numpy.ones(100, dtype=numpy.float64)
         T = 4
         rng_1 = numpy.random.default_rng(42)
-        n_tilde_1 = interferometer.generate_gaussian_noise(S_n, T, rng_1)
+        n_tilde_1 = interferometer.generate_gaussian_noise(S_n_default, T, rng_1)
         rng_2 = numpy.random.default_rng(42)
-        n_tilde_2 = interferometer.generate_gaussian_noise(S_n, T, rng_2)
+        n_tilde_2 = interferometer.generate_gaussian_noise(S_n_default, T, rng_2)
 
         assert numpy.array_equal(n_tilde_1, n_tilde_2)
 
-    def test_noise_different_seeds(self) -> None:
+    def test_noise_different_seeds(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that noise is different with different seeds."""
-        S_n = numpy.ones(100, dtype=numpy.float64)
         T = 4
         rng_1 = numpy.random.default_rng(42)
-        n_tilde_1 = interferometer.generate_gaussian_noise(S_n, T, rng_1)
+        n_tilde_1 = interferometer.generate_gaussian_noise(S_n_default, T, rng_1)
         rng_2 = numpy.random.default_rng(43)
-        n_tilde_2 = interferometer.generate_gaussian_noise(S_n, T, rng_2)
+        n_tilde_2 = interferometer.generate_gaussian_noise(S_n_default, T, rng_2)
 
         assert not numpy.array_equal(n_tilde_1, n_tilde_2)
 
-    def test_noise_scales_with_psd(self) -> None:
+    def test_noise_scales_with_psd(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that noise amplitude scales with power spectral density."""
         ratio = 4
         T = 4
         rng_1 = numpy.random.default_rng(42)
-        S_n_1 = numpy.ones(100, dtype=numpy.float64)
+        S_n_1 = S_n_default
         n_tilde_1 = interferometer.generate_gaussian_noise(S_n_1, T, rng_1)
         rng_2 = numpy.random.default_rng(42)
         S_n_2 = ratio * S_n_1
@@ -411,14 +409,13 @@ class TestGenerateGaussianNoise:
 
         assert numpy.allclose(ratio_calculated, ratio ** (1 / 2))
 
-    def test_noise_scales_with_duration(self) -> None:
+    def test_noise_scales_with_duration(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that noise amplitude scales with duration."""
-        S_n = numpy.ones(100, dtype=numpy.float64)
         T_1, T_2 = 4, 16
         rng_1 = numpy.random.default_rng(42)
-        n_tilde_1 = interferometer.generate_gaussian_noise(S_n, T_1, rng_1)
+        n_tilde_1 = interferometer.generate_gaussian_noise(S_n_default, T_1, rng_1)
         rng_2 = numpy.random.default_rng(42)
-        n_tilde_2 = interferometer.generate_gaussian_noise(S_n, T_2, rng_2)
+        n_tilde_2 = interferometer.generate_gaussian_noise(S_n_default, T_2, rng_2)
         ratio_calculated = numpy.abs(n_tilde_2[1:-2]) / numpy.abs(n_tilde_1[1:-2])
 
         assert numpy.allclose(ratio_calculated, (T_2 / T_1) ** (1 / 2))
