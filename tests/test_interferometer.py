@@ -113,9 +113,10 @@ class TestInterferometer:
     ) -> None:
         """Test that `Interferometer` can be initialised."""
         assert interferometer_default.grid == grid_default
-        assert interferometer_default.h_tilde is None
-        assert interferometer_default.rho is None
-        assert interferometer_default.rho_MF is None
+        assert numpy.array_equal(
+            interferometer_default.h_tilde, numpy.zeros_like(interferometer_default.f, numpy.complex128)
+        )
+        assert interferometer_default.rho == 0
 
     def test_frequency_band(
         self, grid_default: interferometer.Grid, amplitude_spectral_density_file_default: Path
