@@ -25,7 +25,7 @@ class Likelihood:
     present in the data and buried within stationary, Gaussian noise.
     """
 
-    def __init__(self, interferometer: interferometer.Interferometer, model: waveform.Waveform) -> None:
+    def __init__(self, interferometer: interferometer.Interferometer, model: waveform.WaveformModel) -> None:
         self.interferometer = interferometer
         self.model = model
 
@@ -53,10 +53,10 @@ class Likelihood:
         F_plus, F_cross = self.interferometer.calculate_pattern_functions(Theta.theta, Theta.phi, Theta.psi)
         h_tilde = h_tilde_plus * F_plus + h_tilde_cross * F_cross
 
-        h_inner_d = self.interferometer.calculate_inner_product(h_tilde, self.interferometer.d_tilde).real
-        rho_squared = self.interferometer.calculate_inner_product(h_tilde, h_tilde).real
+        n_tilde = self.interferometer.d_tilde - h_tilde
+        n_inner_n = self.interferometer.calculate_inner_product(n_tilde, n_tilde).real
 
-        return h_inner_d - 1 / 2 * rho_squared
+        return -1 / 2 * n_inner_n
 
     def calculate_noise_log_likelihood(self) -> numpy.float64:
         """
@@ -71,7 +71,6 @@ class Likelihood:
         -----
         Irrelevant additive constants have been omitted.
         """
-        n_inner_n = self.interferometer.calculate_inner_product(
-            self.interferometer.n_tilde, self.interferometer.n_tilde
-        ).real
+        n_tilde = self.interferometer.d_tilde
+        n_inner_n = self.interferometer.calculate_inner_product(n_tilde, n_tilde).real
         return -1 / 2 * n_inner_n
