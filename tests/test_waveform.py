@@ -56,9 +56,8 @@ class TestWaveformParameters:
     def test_chirp_mass_property(self, m_1: float, m_2: float, Theta_default: waveform.WaveformParameters) -> None:
         """Test that the `M_chirp` property correctly calculates chirp mass."""
         Theta = replace(Theta_default, m_1=m_1, m_2=m_2)
-        M_chirp = (Theta.m_1 * Theta.m_2) ** (3 / 5) / (Theta.m_1 + Theta.m_2) ** (1 / 5)
 
-        assert Theta.M_chirp == M_chirp
+        assert Theta.M_chirp == (Theta.m_1 * Theta.m_2) ** (3 / 5) / (Theta.m_1 + Theta.m_2) ** (1 / 5)
 
 
 class TestWaveformModel:
@@ -154,9 +153,8 @@ class TestNewtonianWaveformModel:
         Theta_far = replace(Theta_default, r=ratio * r)
         h_tilde_plus_near, _ = self.model.calculate_strain_polarisations(f_default, Theta_near)
         h_tilde_plus_far, _ = self.model.calculate_strain_polarisations(f_default, Theta_far)
-        ratio_calculated = abs(h_tilde_plus_near) / abs(h_tilde_plus_far)
 
-        assert numpy.all(ratio == ratio_calculated)
+        assert numpy.all(ratio == abs(h_tilde_plus_near) / abs(h_tilde_plus_far))
 
     def test_single_frequency(self, Theta_default: waveform.WaveformParameters) -> None:
         """Test with a single frequency value."""
@@ -174,10 +172,7 @@ class TestCalculateInnermostStableCircularOrbitFrequency:
 
     def test_returns_positive_frequency(self) -> None:
         """Test that the function returns a positive frequency."""
-        M = 15 * waveform.M_sun
-        f_ISCO = waveform.calculate_innermost_stable_circular_orbit_frequency(M)
-
-        assert f_ISCO > 0
+        assert waveform.calculate_innermost_stable_circular_orbit_frequency(15 * waveform.M_sun) > 0
 
     def test_frequency_scales_inversely_with_mass(self) -> None:
         """Test that ISCO frequency scales inversely with mass."""
@@ -186,6 +181,5 @@ class TestCalculateInnermostStableCircularOrbitFrequency:
         M_large = 2 * M_small
         f_ISCO_small = waveform.calculate_innermost_stable_circular_orbit_frequency(M_small)
         f_ISCO_large = waveform.calculate_innermost_stable_circular_orbit_frequency(M_large)
-        ratio_calculated = f_ISCO_small / f_ISCO_large
 
-        assert ratio == ratio_calculated
+        assert ratio == f_ISCO_small / f_ISCO_large

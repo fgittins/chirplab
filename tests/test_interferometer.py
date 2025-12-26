@@ -369,20 +369,22 @@ class TestGenerateGaussianNoise:
     def test_noise_reproducible(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that noise is reproducible with same seed."""
         rng_1 = numpy.random.default_rng(42)
-        n_tilde_1 = interferometer.generate_gaussian_noise(S_n_default, self.T, rng_1)
         rng_2 = numpy.random.default_rng(42)
-        n_tilde_2 = interferometer.generate_gaussian_noise(S_n_default, self.T, rng_2)
 
-        assert numpy.array_equal(n_tilde_1, n_tilde_2)
+        assert numpy.array_equal(
+            interferometer.generate_gaussian_noise(S_n_default, self.T, rng_1),
+            interferometer.generate_gaussian_noise(S_n_default, self.T, rng_2),
+        )
 
     def test_noise_different_seeds(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that noise is different with different seeds."""
         rng_1 = numpy.random.default_rng(42)
-        n_tilde_1 = interferometer.generate_gaussian_noise(S_n_default, self.T, rng_1)
         rng_2 = numpy.random.default_rng(43)
-        n_tilde_2 = interferometer.generate_gaussian_noise(S_n_default, self.T, rng_2)
 
-        assert not numpy.array_equal(n_tilde_1, n_tilde_2)
+        assert not numpy.array_equal(
+            interferometer.generate_gaussian_noise(S_n_default, self.T, rng_1),
+            interferometer.generate_gaussian_noise(S_n_default, self.T, rng_2),
+        )
 
     def test_noise_scales_with_power_spectral_density(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that noise amplitude scales with power spectral density."""
@@ -393,9 +395,8 @@ class TestGenerateGaussianNoise:
         rng_2 = numpy.random.default_rng(42)
         S_n_2 = ratio * S_n_1
         n_tilde_2 = interferometer.generate_gaussian_noise(S_n_2, self.T, rng_2)
-        ratio_calculated = numpy.abs(n_tilde_2[1:-2]) / numpy.abs(n_tilde_1[1:-2])
 
-        assert numpy.allclose(ratio_calculated, ratio ** (1 / 2))
+        assert numpy.allclose(numpy.abs(n_tilde_2[1:-2]) / numpy.abs(n_tilde_1[1:-2]), ratio ** (1 / 2))
 
     def test_noise_scales_with_duration(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that noise amplitude scales with duration."""
@@ -404,29 +405,24 @@ class TestGenerateGaussianNoise:
         n_tilde_1 = interferometer.generate_gaussian_noise(S_n_default, T_1, rng_1)
         rng_2 = numpy.random.default_rng(42)
         n_tilde_2 = interferometer.generate_gaussian_noise(S_n_default, T_2, rng_2)
-        ratio_calculated = numpy.abs(n_tilde_2[1:-2]) / numpy.abs(n_tilde_1[1:-2])
 
-        assert numpy.allclose(ratio_calculated, (T_2 / T_1) ** (1 / 2))
+        assert numpy.allclose(numpy.abs(n_tilde_2[1:-2]) / numpy.abs(n_tilde_1[1:-2]), (T_2 / T_1) ** (1 / 2))
 
     def test_noise_mean(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that generated noise has approximately zero mean."""
         rng = numpy.random.default_rng(42)
         n_tilde = interferometer.generate_gaussian_noise(S_n_default, self.T, rng)
-        mu_real = numpy.mean(n_tilde.real)
-        mu_imag = numpy.mean(n_tilde.imag)
         atol = 1e-1
 
-        assert numpy.isclose(mu_real, 0, RTOL, atol)
-        assert numpy.isclose(mu_imag, 0, RTOL, atol)
+        assert numpy.isclose(n_tilde[1:-2].real.mean(), 0, RTOL, atol)
+        assert numpy.isclose(n_tilde[1:-2].imag.mean(), 0, RTOL, atol)
 
     def test_noise_variance(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
         """Test that generated noise has correct variance."""
         rng = numpy.random.default_rng(42)
         n_tilde = interferometer.generate_gaussian_noise(S_n_default, self.T, rng)
-        var_real = numpy.var(n_tilde.real, ddof=1)
-        var_imag = numpy.var(n_tilde.imag, ddof=1)
-        var = 1 / 2 * numpy.mean(S_n_default) * self.T * 1 / 2
+        var = 1 / 2 * 1 / 2 * numpy.mean(S_n_default[1:-2]) * self.T
         atol = 1e-1
 
-        assert numpy.isclose(var_real, var, RTOL, atol)
-        assert numpy.isclose(var_imag, var, RTOL, atol)
+        assert numpy.isclose(n_tilde[1:-2].real.var(ddof=1), var, RTOL, atol)
+        assert numpy.isclose(n_tilde[1:-2].imag.var(ddof=1), var, RTOL, atol)
