@@ -94,14 +94,14 @@ class Grid:
         return 1 / self.T
 
     @property
-    def t(self) -> numpy.typing.NDArray[numpy.floating]:
+    def t(self) -> numpy.typing.NDArray[numpy.float64]:
         """Time array (s)."""
-        return numpy.arange(self.N + 1) * self.Delta_t
+        return numpy.arange(self.N + 1, dtype=numpy.float64) * self.Delta_t
 
     @property
-    def f(self) -> numpy.typing.NDArray[numpy.floating]:
+    def f(self) -> numpy.typing.NDArray[numpy.float64]:
         """Frequency array (Hz)."""
-        return numpy.arange(self.M + 1) * self.Delta_f
+        return numpy.arange(self.M + 1, dtype=numpy.float64) * self.Delta_f
 
     # TODO: check this method
     def generate_gaussian_noise(self, rng: numpy.random.Generator) -> numpy.typing.NDArray[numpy.complex128]:
@@ -192,7 +192,7 @@ class Interferometer:
         self.d_tilde = n_tilde.copy()
 
     @staticmethod
-    def calculate_pattern_functions(theta: float, phi: float, psi: float) -> tuple[numpy.floating, numpy.floating]:
+    def calculate_pattern_functions(theta: float, phi: float, psi: float) -> tuple[numpy.float64, numpy.float64]:
         """
         Calculate the interferometer pattern functions.
 
