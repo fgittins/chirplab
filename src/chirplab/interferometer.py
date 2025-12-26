@@ -130,11 +130,10 @@ class Interferometer:
         rng: None | numpy.random.Generator = None,
         is_zero_noise: bool = False,
     ) -> None:
-        # NOTE: grid could be adapted for more general signal data
-        self.grid = grid
+        self.T = grid.T
+        self.Delta_f = grid.Delta_f
         f_min_sens, f_max_sens = band
 
-        # NOTE: restrict to sensitivity band
         in_bounds_mask = (f_min_sens <= grid.f) & (grid.f <= f_max_sens)
         self.f = grid.f[in_bounds_mask]
 
@@ -144,13 +143,11 @@ class Interferometer:
         S_n_data = amplitude_spectral_density_data**2
         self.S_n = numpy.interp(self.f, f_data, S_n_data)
 
-        self.generate_noise(rng, is_zero_noise)
+        self.set_data(rng, is_zero_noise)
 
-        self.h_tilde = numpy.zeros_like(self.f, numpy.complex128)
-
-    def generate_noise(self, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
+    def set_data(self, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
         """
-        Generate a new noise realisation.
+        Set the interferometer data with a noise realisation.
 
         Parameters
         ----------
@@ -159,15 +156,16 @@ class Interferometer:
         is_zero_noise
             Whether to use zero noise realisation.
         """
+        # TODO: adapt this method to load real data
         if is_zero_noise:
-            self.n_tilde = numpy.zeros_like(self.f, numpy.complex128)
+            n_tilde = numpy.zeros_like(self.f, numpy.complex128)
         else:
             if rng is None:
                 rng = numpy.random.default_rng()
 
-            self.n_tilde = generate_gaussian_noise(self.S_n, self.grid.T, rng)
+            n_tilde = generate_gaussian_noise(self.S_n, self.T, rng)
 
-        self.d_tilde = self.n_tilde.copy()
+        self.d_tilde = n_tilde.copy()
 
     @staticmethod
     def calculate_pattern_functions(theta: float, phi: float, psi: float) -> tuple[numpy.floating, numpy.floating]:
@@ -220,20 +218,36 @@ class Interferometer:
         F_plus, F_cross = self.calculate_pattern_functions(Theta.theta, Theta.phi, Theta.psi)
         return h_tilde_plus * F_plus + h_tilde_cross * F_cross
 
-    def inject(self, model: waveform.WaveformModel, Theta: SignalParameters) -> None:
+    def inject_signal(
+        self, model: waveform.WaveformModel, Theta: SignalParameters
+    ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.float64, numpy.complex128]:
         """
         Inject gravitational-wave signal into the interferometer.
 
         Parameters
         ----------
         model
-            Gravitational-waveform model
+            Gravitational-waveform model.
         Theta
-            Parameters of the gravitational-wave signal
-        """
-        self.h_tilde = self.calculate_strain(model, Theta)
+            Parameters of the gravitational-wave signal.
 
-        self.d_tilde += self.h_tilde
+        Returns
+        -------
+        h_tilde
+            Frequency-domain strain (Hz^-1).
+        rho
+            Optimal signal-to-noise ratio.
+        rho_MF
+            Matched-filter signal-to-noise ratio.
+        """
+        h_tilde = self.calculate_strain(model, Theta)
+
+        self.d_tilde += h_tilde
+
+        rho = self.calculate_inner_product(h_tilde, h_tilde).real ** (1 / 2)
+        rho_MF = self.calculate_inner_product(h_tilde, self.d_tilde) / rho
+
+        return h_tilde, rho, rho_MF
 
     def calculate_inner_product(
         self, a_tilde: numpy.typing.NDArray[numpy.complexfloating], b_tilde: numpy.typing.NDArray[numpy.complexfloating]
@@ -253,17 +267,7 @@ class Interferometer:
         inner_product
             Inner product.
         """
-        return calculate_inner_product(a_tilde, b_tilde, self.S_n, self.grid.Delta_f)
-
-    @property
-    def rho(self) -> numpy.float64:
-        """Optimal signal-to-noise ratio."""
-        return self.calculate_inner_product(self.h_tilde, self.h_tilde).real ** (1 / 2)
-
-    @property
-    def rho_MF(self) -> numpy.complex128:
-        """Matched-filter signal-to-noise ratio."""
-        return self.calculate_inner_product(self.h_tilde, self.d_tilde) / self.rho
+        return calculate_inner_product(a_tilde, b_tilde, self.S_n, self.Delta_f)
 
 
 class LIGO(Interferometer):

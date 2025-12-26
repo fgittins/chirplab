@@ -17,7 +17,7 @@ def injected_interferometer_default(
     """Return default injected interferometer for testing."""
     rng = numpy.random.default_rng(42)
     ifo = interferometer.LIGO(grid_default, rng=rng)
-    ifo.inject(model_default, Theta_default)
+    ifo.inject_signal(model_default, Theta_default)
     return ifo
 
 
@@ -71,7 +71,7 @@ class TestLikelihood:
     ) -> None:
         """Test log-likelihood calculation with zero noise."""
         ifo = interferometer.LIGO(grid_default, is_zero_noise=True)
-        ifo.inject(model_default, Theta_default)
+        ifo.inject_signal(model_default, Theta_default)
         like = likelihood.Likelihood(ifo, model_default)
         ln_L = like.calculate_log_likelihood(Theta_default)
 
@@ -95,7 +95,7 @@ class TestLikelihood:
     ) -> None:
         """Test log-likelihood with incorrect signal parameters."""
         ifo = interferometer.LIGO(grid_default, is_zero_noise=True)
-        ifo.inject(model_default, Theta_default)
+        ifo.inject_signal(model_default, Theta_default)
         like = likelihood.Likelihood(ifo, model_default)
         Theta_wrong = replace(Theta_default, m_1=20 * waveform.M_sun, m_2=20 * waveform.M_sun, r=2 * Theta_default.r)
         ln_L_true = like.calculate_log_likelihood(Theta_default)
