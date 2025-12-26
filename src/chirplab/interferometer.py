@@ -103,6 +103,30 @@ class Grid:
         """Frequency array (Hz)."""
         return numpy.arange(self.M + 1) * self.Delta_f
 
+    # TODO: check this method
+    def generate_gaussian_noise(self, rng: numpy.random.Generator) -> numpy.typing.NDArray[numpy.complex128]:
+        """
+        Generate frequency-domain Gaussian noise per unit power spectral density.
+
+        Parameters
+        ----------
+        rng
+            Random number generator.
+
+        Returns
+        -------
+        m_tilde
+            Frequency-domain Gaussian noise per unit power spectral density (Hz^-1/2).
+        """
+        x = rng.standard_normal((2, self.M + 1))
+
+        sigma = (1 / 4 * self.T) ** (1 / 2)
+
+        m_tilde: numpy.typing.NDArray[numpy.complex128] = (x[0] + 1j * x[1]) * sigma
+        m_tilde[0] = 0
+        m_tilde[-1] = 0
+        return m_tilde
+
 
 class Interferometer:
     """
@@ -130,12 +154,11 @@ class Interferometer:
         rng: None | numpy.random.Generator = None,
         is_zero_noise: bool = False,
     ) -> None:
-        self.T = grid.T
-        self.Delta_f = grid.Delta_f
+        self.grid = grid
         f_min_sens, f_max_sens = band
 
-        in_bounds_mask = (f_min_sens <= grid.f) & (grid.f <= f_max_sens)
-        self.f = grid.f[in_bounds_mask]
+        self.in_bounds_mask = (f_min_sens <= grid.f) & (grid.f <= f_max_sens)
+        self.f = grid.f[self.in_bounds_mask]
 
         f_data, amplitude_spectral_density_data = numpy.loadtxt(
             amplitude_spectral_density_file, numpy.float64, unpack=True
@@ -163,7 +186,8 @@ class Interferometer:
             if rng is None:
                 rng = numpy.random.default_rng()
 
-            n_tilde = generate_gaussian_noise(self.S_n, self.T, rng)
+            m_tilde = self.grid.generate_gaussian_noise(rng)
+            n_tilde = self.S_n ** (1 / 2) * m_tilde[self.in_bounds_mask]
 
         self.d_tilde = n_tilde.copy()
 
@@ -267,7 +291,7 @@ class Interferometer:
         inner_product
             Inner product.
         """
-        return calculate_inner_product(a_tilde, b_tilde, self.S_n, self.Delta_f)
+        return calculate_inner_product(a_tilde, b_tilde, self.S_n, self.grid.Delta_f)
 
 
 class LIGO(Interferometer):
@@ -318,43 +342,3 @@ def calculate_inner_product(
     integrand = a_tilde.conj() * b_tilde / S_n
     integral = numpy.sum(integrand, dtype=numpy.complex128) * Delta_f
     return 4 * integral
-
-
-def generate_gaussian_noise(
-    S_n: numpy.typing.NDArray[numpy.floating], T: float, rng: numpy.random.Generator
-) -> numpy.typing.NDArray[numpy.complex128]:
-    """
-    Generate frequency-domain Gaussian noise.
-
-    Parameters
-    ----------
-    S_n
-        Noise power spectral density (Hz^-1).
-    T
-        Duration of the noise (s).
-    rng
-        Random number generator.
-
-    Returns
-    -------
-    n_tilde
-        Frequency-domain Gaussian noise (Hz^-1).
-
-    Notes
-    -----
-    The generated noise realisation has zero mean and covariance consistent with the provided power spectral density.
-    See Eqs. (7.7) and (7.9) of Ref. [1].
-
-    References
-    ----------
-    [1]  M. Maggiore, Gravitational Waves. Volume 1: Theory and Experiments, (Oxford University Press, 2008).
-    """
-    x: numpy.typing.NDArray[numpy.float64]
-    x = rng.standard_normal((2, S_n.size)) * (1 / 2) ** (1 / 2)
-
-    sigma = (1 / 2 * S_n * T) ** (1 / 2)
-
-    n_tilde: numpy.typing.NDArray[numpy.complex128] = (x[0] + 1j * x[1]) * sigma
-    n_tilde[0] = 0
-    n_tilde[-1] = 0
-    return n_tilde

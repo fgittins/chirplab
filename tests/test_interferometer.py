@@ -70,6 +70,58 @@ class TestGrid:
         assert grid_default.f[-1] == grid_default.f_max
         assert numpy.all(numpy.diff(grid_default.f) == grid_default.Delta_f)
 
+    def test_generate_gaussian_noise(self, grid_default: interferometer.Grid) -> None:
+        """Test that `generate_gaussian_noise` returns noise of correct shape."""
+        rng = numpy.random.default_rng(42)
+        n_tilde = grid_default.generate_gaussian_noise(rng)
+
+        assert n_tilde.shape == (grid_default.M + 1,)
+
+    def test_generate_gaussian_noise_reproducible(self, grid_default: interferometer.Grid) -> None:
+        """Test that `generate_gaussian_noise` is reproducible with same seed."""
+        rng_1 = numpy.random.default_rng(42)
+        rng_2 = numpy.random.default_rng(42)
+
+        assert numpy.array_equal(
+            grid_default.generate_gaussian_noise(rng_1), grid_default.generate_gaussian_noise(rng_2)
+        )
+
+    def test_generate_gaussian_noise_different_seeds(self, grid_default: interferometer.Grid) -> None:
+        """Test that `generate_gaussian_noise` produces different noise with different seeds."""
+        rng_1 = numpy.random.default_rng(42)
+        rng_2 = numpy.random.default_rng(43)
+
+        assert not numpy.array_equal(
+            grid_default.generate_gaussian_noise(rng_1), grid_default.generate_gaussian_noise(rng_2)
+        )
+
+    def test_generate_gaussian_noise_endpoints_zero(self, grid_default: interferometer.Grid) -> None:
+        """Test that `generate_gaussian_noise` returns noise that is zero at direct-current and Nyquist frequencies."""
+        rng = numpy.random.default_rng(42)
+        n_tilde = grid_default.generate_gaussian_noise(rng)
+
+        assert n_tilde[0] == 0
+        assert n_tilde[-1] == 0
+
+    def test_generate_gaussian_noise_dtype(self, grid_default: interferometer.Grid) -> None:
+        """Test that `generate_gaussian_noise` returns noise of correct dtype."""
+        rng = numpy.random.default_rng(42)
+        n_tilde = grid_default.generate_gaussian_noise(rng)
+
+        assert n_tilde.dtype == numpy.complex128
+
+    def test_generate_gaussian_noise_mean_variance(self, grid_default: interferometer.Grid) -> None:
+        """Test that `generate_gaussian_noise` returns noise with correct mean and variance."""
+        rng = numpy.random.default_rng(42)
+        n_tilde = grid_default.generate_gaussian_noise(rng)
+        var = 1 / 2 * 1 / 2 * grid_default.T
+        atol = 1e-1
+
+        assert numpy.isclose(n_tilde[1:-2].real.mean(), 0, RTOL, atol)
+        assert numpy.isclose(n_tilde[1:-2].imag.mean(), 0, RTOL, atol)
+        assert numpy.isclose(n_tilde[1:-2].real.var(ddof=1), var, RTOL, atol)
+        assert numpy.isclose(n_tilde[1:-2].imag.var(ddof=1), var, RTOL, atol)
+
 
 class TestInterferometer:
     """Tests for the `Interferometer` class."""
@@ -90,8 +142,7 @@ class TestInterferometer:
         self, grid_default: interferometer.Grid, interferometer_default: interferometer.Interferometer
     ) -> None:
         """Test that `Interferometer` can be initialised."""
-        assert interferometer_default.T == grid_default.T
-        assert interferometer_default.Delta_f == grid_default.Delta_f
+        assert interferometer_default.grid == grid_default
 
     def test_frequency_band(
         self, grid_default: interferometer.Grid, amplitude_spectral_density_file_default: Path
@@ -238,7 +289,7 @@ class TestInterferometer:
         )
         h_tilde, rho, rho_MF = ifo.inject_signal(model_default, Theta_default)
 
-        assert numpy.isclose(rho, numpy.abs(rho_MF))
+        assert numpy.isclose(rho, abs(rho_MF))
 
 
 class TestLIGO:
@@ -248,8 +299,7 @@ class TestLIGO:
         """Test that `LIGO` can be initialised."""
         ligo = interferometer.LIGO(grid_default)
 
-        assert ligo.T == grid_default.T
-        assert ligo.Delta_f == grid_default.Delta_f
+        assert ligo.grid == grid_default
         assert 20 <= ligo.f.min()
         assert ligo.f.max() <= 2048
 
@@ -337,92 +387,3 @@ class TestCalculateInnerProduct:
 
         with pytest.raises(AssertionError):
             interferometer.calculate_inner_product(a_tilde, b_tilde, S_n_default, Delta_f)
-
-
-class TestGenerateGaussianNoise:
-    """Tests for the `generate_gaussian_noise` function."""
-
-    T = 4
-
-    def test_noise_shape(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
-        """Test that generated noise has correct shape."""
-        rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_gaussian_noise(S_n_default, self.T, rng)
-
-        assert n_tilde.shape == S_n_default.shape
-
-    def test_noise_dtype(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
-        """Test that generated noise has correct dtype."""
-        rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_gaussian_noise(S_n_default, self.T, rng)
-
-        assert n_tilde.dtype == numpy.complex128
-
-    def test_noise_endpoints_zero(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
-        """Test that noise is zero at direct-current and Nyquist frequencies."""
-        rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_gaussian_noise(S_n_default, self.T, rng)
-
-        assert n_tilde[0] == 0
-        assert n_tilde[-1] == 0
-
-    def test_noise_reproducible(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
-        """Test that noise is reproducible with same seed."""
-        rng_1 = numpy.random.default_rng(42)
-        rng_2 = numpy.random.default_rng(42)
-
-        assert numpy.array_equal(
-            interferometer.generate_gaussian_noise(S_n_default, self.T, rng_1),
-            interferometer.generate_gaussian_noise(S_n_default, self.T, rng_2),
-        )
-
-    def test_noise_different_seeds(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
-        """Test that noise is different with different seeds."""
-        rng_1 = numpy.random.default_rng(42)
-        rng_2 = numpy.random.default_rng(43)
-
-        assert not numpy.array_equal(
-            interferometer.generate_gaussian_noise(S_n_default, self.T, rng_1),
-            interferometer.generate_gaussian_noise(S_n_default, self.T, rng_2),
-        )
-
-    def test_noise_scales_with_power_spectral_density(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
-        """Test that noise amplitude scales with power spectral density."""
-        ratio = 4
-        rng_1 = numpy.random.default_rng(42)
-        S_n_1 = S_n_default
-        n_tilde_1 = interferometer.generate_gaussian_noise(S_n_1, self.T, rng_1)
-        rng_2 = numpy.random.default_rng(42)
-        S_n_2 = ratio * S_n_1
-        n_tilde_2 = interferometer.generate_gaussian_noise(S_n_2, self.T, rng_2)
-
-        assert numpy.allclose(numpy.abs(n_tilde_2[1:-2]) / numpy.abs(n_tilde_1[1:-2]), ratio ** (1 / 2))
-
-    def test_noise_scales_with_duration(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
-        """Test that noise amplitude scales with duration."""
-        T_1, T_2 = 4, 16
-        rng_1 = numpy.random.default_rng(42)
-        n_tilde_1 = interferometer.generate_gaussian_noise(S_n_default, T_1, rng_1)
-        rng_2 = numpy.random.default_rng(42)
-        n_tilde_2 = interferometer.generate_gaussian_noise(S_n_default, T_2, rng_2)
-
-        assert numpy.allclose(numpy.abs(n_tilde_2[1:-2]) / numpy.abs(n_tilde_1[1:-2]), (T_2 / T_1) ** (1 / 2))
-
-    def test_noise_mean(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
-        """Test that generated noise has approximately zero mean."""
-        rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_gaussian_noise(S_n_default, self.T, rng)
-        atol = 1e-1
-
-        assert numpy.isclose(n_tilde[1:-2].real.mean(), 0, RTOL, atol)
-        assert numpy.isclose(n_tilde[1:-2].imag.mean(), 0, RTOL, atol)
-
-    def test_noise_variance(self, S_n_default: numpy.typing.NDArray[numpy.float64]) -> None:
-        """Test that generated noise has correct variance."""
-        rng = numpy.random.default_rng(42)
-        n_tilde = interferometer.generate_gaussian_noise(S_n_default, self.T, rng)
-        var = 1 / 2 * 1 / 2 * numpy.mean(S_n_default[1:-2]) * self.T
-        atol = 1e-1
-
-        assert numpy.isclose(n_tilde[1:-2].real.var(ddof=1), var, RTOL, atol)
-        assert numpy.isclose(n_tilde[1:-2].imag.var(ddof=1), var, RTOL, atol)
