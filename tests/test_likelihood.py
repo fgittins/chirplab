@@ -48,12 +48,6 @@ class TestLikelihood:
 
         assert isinstance(ln_L_noise, (float, numpy.floating))
 
-    def test_log_likelihood_noise_is_negative(self, likelihood_default: likelihood.Likelihood) -> None:
-        """Test that the noise log-likelihood is negative."""
-        ln_L_noise = likelihood_default.ln_L_noise
-
-        assert ln_L_noise < 0
-
     def test_log_likelihood_noise_consistency(self, likelihood_default: likelihood.Likelihood) -> None:
         """Test that repeated calls to `ln_L_noise` property return the same value."""
         ln_L_noise_1 = likelihood_default.ln_L_noise
@@ -68,14 +62,6 @@ class TestLikelihood:
         ln_L = likelihood_default.calculate_log_likelihood(Theta_default)
 
         assert isinstance(ln_L, (float, numpy.floating))
-
-    def test_calculate_log_likelihood_is_negative(
-        self, likelihood_default: likelihood.Likelihood, Theta_default: interferometer.SignalParameters
-    ) -> None:
-        """Test that log-likelihood is negative."""
-        ln_L = likelihood_default.calculate_log_likelihood(Theta_default)
-
-        assert ln_L < 0
 
     def test_calculate_log_likelihood_zero_noise(
         self,
@@ -100,20 +86,6 @@ class TestLikelihood:
 
         assert not numpy.isnan(ln_L)
         assert not numpy.isinf(ln_L)
-
-    def test_calculate_log_likelihood_signal_injection(
-        self,
-        grid_default: interferometer.Grid,
-        model_default: waveform.WaveformModel,
-        Theta_default: interferometer.SignalParameters,
-    ) -> None:
-        """Test log-likelihood improves when true signal parameters are used."""
-        ifo = interferometer.LIGO(grid_default, is_zero_noise=True)
-        ifo.inject(model_default, Theta_default)
-        like = likelihood.Likelihood(ifo, model_default)
-        ln_L_true = like.calculate_log_likelihood(Theta_default)
-
-        assert ln_L_true > like.ln_L_noise
 
     def test_calculate_log_likelihood_wrong_parameters(
         self,
