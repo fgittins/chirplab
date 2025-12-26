@@ -110,17 +110,13 @@ class TestGrid:
 
         assert n_tilde.dtype == numpy.complex128
 
-    def test_generate_gaussian_noise_mean_variance(self, grid_default: interferometer.Grid) -> None:
-        """Test that `generate_gaussian_noise` returns noise with correct mean and variance."""
+    def test_generate_gaussian_noise_expectation_values(self, grid_default: interferometer.Grid) -> None:
+        """Test that `generate_gaussian_noise` returns noise with correct expectation values."""
         rng = numpy.random.default_rng(42)
         n_tilde = grid_default.generate_gaussian_noise(rng)
-        var = 1 / 2 * 1 / 2 * grid_default.T
-        atol = 1e-1
 
-        assert numpy.isclose(n_tilde[1:-2].real.mean(), 0, RTOL, atol)
-        assert numpy.isclose(n_tilde[1:-2].imag.mean(), 0, RTOL, atol)
-        assert numpy.isclose(n_tilde[1:-2].real.var(ddof=1), var, RTOL, atol)
-        assert numpy.isclose(n_tilde[1:-2].imag.var(ddof=1), var, RTOL, atol)
+        assert numpy.isclose(n_tilde[1:-2].mean(), 0, RTOL, 0.02)
+        assert numpy.isclose((numpy.abs(n_tilde[1:-2]) ** 2).mean(), 1 / 2 * grid_default.T, RTOL, 0.02)
 
 
 class TestInterferometer:
