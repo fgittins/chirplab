@@ -12,10 +12,24 @@ RTOL = 0
 ATOL = 1e-27
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def S_n_default() -> numpy.typing.NDArray[numpy.float64]:
     """Return default power spectral density for testing."""
     return numpy.ones(1_000, dtype=numpy.float64)
+
+
+@pytest.fixture(scope="class")
+def amplitude_spectral_density_file_default() -> Path:
+    """Return path to default amplitude spectral density file for testing."""
+    return Path(__file__).parent.parent / "src/chirplab/data/aligo_O4high.txt"
+
+
+@pytest.fixture(scope="class")
+def interferometer_default(
+    grid_default: interferometer.Grid, amplitude_spectral_density_file_default: Path
+) -> interferometer.Interferometer:
+    """Return default interferometer for testing."""
+    return interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default)
 
 
 class TestGrid:
@@ -121,18 +135,6 @@ class TestGrid:
 
 class TestInterferometer:
     """Tests for the `Interferometer` class."""
-
-    @pytest.fixture
-    def amplitude_spectral_density_file_default(self) -> Path:
-        """Return path to default amplitude spectral density file for testing."""
-        return Path(__file__).parent.parent / "src/chirplab/data/aligo_O4high.txt"
-
-    @pytest.fixture
-    def interferometer_default(
-        self, grid_default: interferometer.Grid, amplitude_spectral_density_file_default: Path
-    ) -> interferometer.Interferometer:
-        """Return default interferometer for testing."""
-        return interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default)
 
     def test_initialisation(
         self, grid_default: interferometer.Grid, interferometer_default: interferometer.Interferometer

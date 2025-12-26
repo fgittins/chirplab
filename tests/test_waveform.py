@@ -11,7 +11,7 @@ RTOL = 0
 ATOL = 1e-27
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def Theta_default() -> waveform.WaveformParameters:
     """Return default set of signal parameters for testing."""
     return waveform.WaveformParameters(
@@ -24,7 +24,7 @@ def Theta_default() -> waveform.WaveformParameters:
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def f_default() -> numpy.typing.NDArray[numpy.float64]:
     """Return default frequency array for testing."""
     return numpy.linspace(20, 70, 20, dtype=numpy.float64)

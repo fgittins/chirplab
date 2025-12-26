@@ -8,7 +8,7 @@ import pytest
 from chirplab import interferometer, likelihood, waveform
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def injected_interferometer_default(
     grid_default: interferometer.Grid,
     model_default: waveform.WaveformModel,
@@ -21,7 +21,19 @@ def injected_interferometer_default(
     return ifo
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
+def injected_interferometer_zero_noise_default(
+    grid_default: interferometer.Grid,
+    model_default: waveform.WaveformModel,
+    Theta_default: interferometer.SignalParameters,
+) -> interferometer.Interferometer:
+    """Return default injected interferometer with zero noise for testing."""
+    ifo = interferometer.LIGO(grid_default, is_zero_noise=True)
+    ifo.inject_signal(model_default, Theta_default)
+    return ifo
+
+
+@pytest.fixture(scope="class")
 def likelihood_default(
     injected_interferometer_default: interferometer.Interferometer, model_default: waveform.WaveformModel
 ) -> likelihood.Likelihood:
@@ -65,14 +77,12 @@ class TestLikelihood:
 
     def test_calculate_log_likelihood_zero_noise(
         self,
-        grid_default: interferometer.Grid,
+        injected_interferometer_zero_noise_default: interferometer.Interferometer,
         model_default: waveform.WaveformModel,
         Theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test log-likelihood calculation with zero noise."""
-        ifo = interferometer.LIGO(grid_default, is_zero_noise=True)
-        ifo.inject_signal(model_default, Theta_default)
-        like = likelihood.Likelihood(ifo, model_default)
+        like = likelihood.Likelihood(injected_interferometer_zero_noise_default, model_default)
         ln_L = like.calculate_log_likelihood(Theta_default)
 
         assert not numpy.isnan(ln_L)
@@ -89,14 +99,12 @@ class TestLikelihood:
 
     def test_calculate_log_likelihood_wrong_parameters(
         self,
-        grid_default: interferometer.Grid,
+        injected_interferometer_zero_noise_default: interferometer.Interferometer,
         model_default: waveform.WaveformModel,
         Theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test log-likelihood with incorrect signal parameters."""
-        ifo = interferometer.LIGO(grid_default, is_zero_noise=True)
-        ifo.inject_signal(model_default, Theta_default)
-        like = likelihood.Likelihood(ifo, model_default)
+        like = likelihood.Likelihood(injected_interferometer_zero_noise_default, model_default)
         Theta_wrong = replace(Theta_default, m_1=20 * waveform.M_sun, m_2=20 * waveform.M_sun, r=2 * Theta_default.r)
         ln_L_true = like.calculate_log_likelihood(Theta_default)
         ln_L_wrong = like.calculate_log_likelihood(Theta_wrong)

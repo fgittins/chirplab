@@ -6,7 +6,7 @@ import pytest
 from chirplab import interferometer, waveform
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def Theta_default() -> interferometer.SignalParameters:
     """Return default set of signal parameters for testing."""
     return interferometer.SignalParameters(
@@ -22,13 +22,13 @@ def Theta_default() -> interferometer.SignalParameters:
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def grid_default() -> interferometer.Grid:
     """Return default grid for testing."""
     return interferometer.Grid(T=4, f_s=4096)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def model_default() -> waveform.WaveformModel:
     """Return default waveform model for testing."""
     return waveform.NewtonianWaveformModel()
