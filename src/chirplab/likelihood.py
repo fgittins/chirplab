@@ -29,18 +29,18 @@ class Likelihood:
         self.interferometer = interferometer
         self.model = model
 
-    def calculate_log_likelihood(self, Theta: interferometer.SignalParameters) -> numpy.float64:
+    def calculate_log_likelihood(self, theta: interferometer.SignalParameters) -> numpy.float64:
         """
         Calculate the log-likelihood as a function of the gravitational-wave signal parameters.
 
         Parameters
         ----------
-        Theta
+        theta
             Parameters of the gravitational-wave signal.
 
         Returns
         -------
-        ln_L
+        ln_l
             Log-likelihood value.
 
         Notes
@@ -50,13 +50,13 @@ class Likelihood:
         Under the gravitational-wave signal hypothesis, the collected data is given by the sum of a gravitational-wave
         signal and noise, which is assumed to be Gaussian.
         """
-        h_tilde = self.interferometer.calculate_strain(self.model, Theta)
+        h_tilde = self.interferometer.calculate_strain(self.model, theta)
         n_tilde = self.interferometer.d_tilde - h_tilde
         n_inner_n = self.interferometer.calculate_inner_product(n_tilde, n_tilde).real
         return -1 / 2 * n_inner_n
 
     @property
-    def ln_L_noise(self) -> numpy.float64:
+    def ln_l_noise(self) -> numpy.float64:
         """
         Log-likelihood of the noise hypothesis.
 

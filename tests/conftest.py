@@ -7,15 +7,15 @@ from chirplab import interferometer, waveform
 
 
 @pytest.fixture(scope="session")
-def Theta_default() -> interferometer.SignalParameters:
+def theta_default() -> interferometer.SignalParameters:
     """Return default set of signal parameters for testing."""
     return interferometer.SignalParameters(
-        m_1=30 * waveform.M_sun,
-        m_2=30 * waveform.M_sun,
-        r=500e6 * waveform.pc,
+        m_1=30 * waveform.M_SUN,
+        m_2=30 * waveform.M_SUN,
+        r=500e6 * waveform.PC,
         iota=numpy.pi / 3,
         t_c=100,
-        Phi_c=1.5,
+        phi_c=1.5,
         theta=0,
         phi=numpy.pi / 4,
         psi=0.5,
@@ -25,10 +25,16 @@ def Theta_default() -> interferometer.SignalParameters:
 @pytest.fixture(scope="session")
 def grid_default() -> interferometer.Grid:
     """Return default grid for testing."""
-    return interferometer.Grid(T=4, f_s=4096)
+    return interferometer.Grid(t_d=4, f_s=4096)
 
 
 @pytest.fixture(scope="session")
 def model_default() -> waveform.WaveformModel:
     """Return default waveform model for testing."""
     return waveform.NewtonianWaveformModel()
+
+
+@pytest.fixture(scope="function")
+def rng_default() -> numpy.random.Generator:
+    """Return default random number generator for testing."""
+    return numpy.random.default_rng(42)

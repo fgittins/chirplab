@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 import numpy
 
-c = 299792458.0
+C = 299792458.0
 G = 6.6743e-11
-M_sun = 1.988409870698051e30
-pc = 3.085677581491367e16
+M_SUN = 1.988409870698051e30
+PC = 3.085677581491367e16
 
 
 @dataclass
@@ -27,7 +27,7 @@ class WaveformParameters:
         Inclination angle of the binary (rad).
     t_c
         Coalescence time (s).
-    Phi_c
+    phi_c
         Coalescence phase (rad).
     """
 
@@ -36,25 +36,25 @@ class WaveformParameters:
     r: float
     iota: float
     t_c: float
-    Phi_c: float
+    phi_c: float
 
     @property
-    def M(self) -> float:
+    def m_total(self) -> float:
         """Total mass of the binary (kg)."""
         return self.m_1 + self.m_2
 
     @property
-    def M_chirp(self) -> float:
+    def m_chirp(self) -> float:
         """Chirp mass of the binary (kg)."""
-        M_chirp: float = (self.m_1 * self.m_2) ** (3 / 5) / (self.m_1 + self.m_2) ** (1 / 5)
-        return M_chirp
+        m_chirp: float = (self.m_1 * self.m_2) ** (3 / 5) / (self.m_1 + self.m_2) ** (1 / 5)
+        return m_chirp
 
 
 class WaveformModel:
     """Gravitational-waveform model base class."""
 
     def calculate_strain_polarisations(
-        self, f: numpy.typing.NDArray[numpy.floating], Theta: WaveformParameters
+        self, f: numpy.typing.NDArray[numpy.floating], theta: WaveformParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.
@@ -63,7 +63,7 @@ class WaveformModel:
         ----------
         f
             Frequency array (Hz).
-        Theta
+        theta
             Parameters of the gravitational-wave signal.
 
         Returns
@@ -82,7 +82,7 @@ class NewtonianWaveformModel(WaveformModel):
 
     @staticmethod
     def calculate_strain_polarisations(
-        f: numpy.typing.NDArray[numpy.floating], Theta: WaveformParameters
+        f: numpy.typing.NDArray[numpy.floating], theta: WaveformParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.
@@ -91,7 +91,7 @@ class NewtonianWaveformModel(WaveformModel):
         ----------
         f
             Frequency array (Hz).
-        Theta
+        theta
             Parameters of the gravitational-wave signal.
 
         Returns
@@ -113,42 +113,42 @@ class NewtonianWaveformModel(WaveformModel):
         h_tilde_cross = numpy.zeros_like(f, numpy.complex128)
 
         # NOTE: model does not apply above the innermost stable circular orbit frequency
-        f_ISCO = calculate_innermost_stable_circular_orbit_frequency(Theta.M)
-        valid_mask = f <= f_ISCO
+        f_isco = calculate_isco_frequency(theta.m_total)
+        valid_mask = f <= f_isco
         f_valid = f[valid_mask]
 
-        A = (
+        a = (
             (5 / 24) ** (1 / 2)
             * (1 / numpy.pi ** (2 / 3))
-            * (c / Theta.r)
-            * (G * Theta.M_chirp / c**3) ** (5 / 6)
+            * (C / theta.r)
+            * (G * theta.m_chirp / C**3) ** (5 / 6)
             * (1 / f_valid ** (7 / 6))
         )
-        Psi = (
-            2 * numpy.pi * f_valid * Theta.t_c
-            - Theta.Phi_c
+        psi = (
+            2 * numpy.pi * f_valid * theta.t_c
+            - theta.phi_c
             - numpy.pi / 4
-            + 3 / 4 * (G * Theta.M_chirp / c**3 * 8 * numpy.pi * f_valid) ** (-5 / 3)
+            + 3 / 4 * (G * theta.m_chirp / C**3 * 8 * numpy.pi * f_valid) ** (-5 / 3)
         )
 
-        h_tilde_plus[valid_mask] = A * numpy.exp(1j * Psi) * (1 + numpy.cos(Theta.iota) ** 2) / 2
-        h_tilde_cross[valid_mask] = 1j * A * numpy.exp(1j * Psi) * numpy.cos(Theta.iota)
+        h_tilde_plus[valid_mask] = a * numpy.exp(1j * psi) * (1 + numpy.cos(theta.iota) ** 2) / 2
+        h_tilde_cross[valid_mask] = 1j * a * numpy.exp(1j * psi) * numpy.cos(theta.iota)
 
         return h_tilde_plus, h_tilde_cross
 
 
-def calculate_innermost_stable_circular_orbit_frequency(M: float) -> float:
+def calculate_isco_frequency(m_total: float) -> float:
     """
     Calculate the gravitational-wave frequency of the innermost stable circular orbit.
 
     Parameters
     ----------
-    M
+    m_total
         Total mass of the binary (kg).
 
     Returns
     -------
-    f_ISCO
+    f_isco
         Innermost stable circular orbit frequency (Hz).
     """
-    return 1 / (6 ** (3 / 2) * numpy.pi) * c**3 / (G * M)
+    return 1 / (6 ** (3 / 2) * numpy.pi) * C**3 / (G * m_total)

@@ -27,7 +27,7 @@ class SignalParameters(waveform.WaveformParameters):
         Inclination angle of the binary (rad).
     t_c
         Coalescence time (s).
-    Phi_c
+    phi_c
         Coalescence phase (rad).
     theta
         Polar angle of the binary in the detector frame (rad).
@@ -49,23 +49,23 @@ class Grid:
 
     Parameters
     ----------
-    T
+    t_d
         Duration of the signal (s).
     f_s
         Sampling frequency (Hz).
     """
 
-    T: float
+    t_d: float
     f_s: float
 
     def __post_init__(self) -> None:
         """Validate parameters after initialisation."""
-        if not (self.T * self.f_s).is_integer():
-            msg = "The product of T and f_s must be an integer."
+        if not (self.t_d * self.f_s).is_integer():
+            msg = "The product of t_d and f_s must be an integer."
             raise ValueError(msg)
 
-        if self.N % 2 != 0:
-            msg = "The number of time samples N must be even."
+        if self.n % 2 != 0:
+            msg = "The number of time samples n must be even."
             raise ValueError(msg)
 
     @property
@@ -74,39 +74,38 @@ class Grid:
         return self.f_s / 2
 
     @property
-    def N(self) -> int:
+    def n(self) -> int:
         """Number of time samples."""
-        return round(self.T * self.f_s)
+        return round(self.t_d * self.f_s)
 
     @property
-    def M(self) -> int:
+    def m(self) -> int:
         """Number of frequency samples."""
-        return self.N // 2
+        return self.n // 2
 
     @property
-    def Delta_t(self) -> float:
+    def delta_t(self) -> float:
         """Time resolution (s)."""
         return 1 / self.f_s
 
     @property
-    def Delta_f(self) -> float:
+    def delta_f(self) -> float:
         """Frequency resolution (Hz)."""
-        return 1 / self.T
+        return 1 / self.t_d
 
     @property
     def t(self) -> numpy.typing.NDArray[numpy.float64]:
         """Time array (s)."""
-        return numpy.arange(self.N + 1, dtype=numpy.float64) * self.Delta_t
+        return numpy.arange(self.n + 1, dtype=numpy.float64) * self.delta_t
 
     @property
     def f(self) -> numpy.typing.NDArray[numpy.float64]:
         """Frequency array (Hz)."""
-        return numpy.arange(self.M + 1, dtype=numpy.float64) * self.Delta_f
+        return numpy.arange(self.m + 1, dtype=numpy.float64) * self.delta_f
 
-    # TODO: check this method
     def generate_gaussian_noise(self, rng: numpy.random.Generator) -> numpy.typing.NDArray[numpy.complex128]:
         """
-        Generate frequency-domain Gaussian noise per unit power spectral density.
+        Generate frequency-domain Gaussian noise per unit amplitude spectral density.
 
         Parameters
         ----------
@@ -116,11 +115,11 @@ class Grid:
         Returns
         -------
         m_tilde
-            Frequency-domain Gaussian noise per unit power spectral density (Hz^-1/2).
+            Frequency-domain Gaussian noise per unit amplitude spectral density (Hz^-1/2).
         """
-        x = rng.standard_normal((2, self.M + 1))
+        x = rng.standard_normal((2, self.m + 1))
 
-        sigma = (1 / 4 * self.T) ** (1 / 2)
+        sigma = (1 / 4 * self.t_d) ** (1 / 2)
 
         m_tilde: numpy.typing.NDArray[numpy.complex128] = (x[0] + 1j * x[1]) * sigma
         m_tilde[0] = 0
@@ -160,11 +159,8 @@ class Interferometer:
         self.in_bounds_mask = (f_min_sens <= grid.f) & (grid.f <= f_max_sens)
         self.f = grid.f[self.in_bounds_mask]
 
-        f_data, amplitude_spectral_density_data = numpy.loadtxt(
-            amplitude_spectral_density_file, numpy.float64, unpack=True
-        )
-        S_n_data = amplitude_spectral_density_data**2
-        self.S_n = numpy.interp(self.f, f_data, S_n_data)
+        f, amplitude_spectral_density = numpy.loadtxt(amplitude_spectral_density_file, numpy.float64, unpack=True)
+        self.s_n = numpy.interp(self.f, f, amplitude_spectral_density**2)
 
         self.set_data(rng, is_zero_noise)
 
@@ -187,7 +183,7 @@ class Interferometer:
                 rng = numpy.random.default_rng()
 
             m_tilde = self.grid.generate_gaussian_noise(rng)
-            n_tilde = self.S_n ** (1 / 2) * m_tilde[self.in_bounds_mask]
+            n_tilde = self.s_n ** (1 / 2) * m_tilde[self.in_bounds_mask]
 
         self.d_tilde = n_tilde.copy()
 
@@ -207,21 +203,21 @@ class Interferometer:
 
         Returns
         -------
-        F_plus
+        f_plus
             Plus pattern function.
-        F_cross
+        f_cross
             Cross pattern function.
         """
-        F_plus_0 = 1 / 2 * (1 + numpy.cos(theta) ** 2) * numpy.cos(2 * phi)
-        F_cross_0 = numpy.cos(theta) * numpy.sin(2 * phi)
+        f_plus_0 = 1 / 2 * (1 + numpy.cos(theta) ** 2) * numpy.cos(2 * phi)
+        f_cross_0 = numpy.cos(theta) * numpy.sin(2 * phi)
 
-        F_plus = F_plus_0 * numpy.cos(2 * psi) - F_cross_0 * numpy.sin(2 * psi)
-        F_cross = F_plus_0 * numpy.sin(2 * psi) + F_cross_0 * numpy.cos(2 * psi)
+        f_plus = f_plus_0 * numpy.cos(2 * psi) - f_cross_0 * numpy.sin(2 * psi)
+        f_cross = f_plus_0 * numpy.sin(2 * psi) + f_cross_0 * numpy.cos(2 * psi)
 
-        return F_plus, F_cross
+        return f_plus, f_cross
 
     def calculate_strain(
-        self, model: waveform.WaveformModel, Theta: SignalParameters
+        self, model: waveform.WaveformModel, theta: SignalParameters
     ) -> numpy.typing.NDArray[numpy.complex128]:
         """
         Calculate the frequency-domain strain response in the interferometer.
@@ -230,7 +226,7 @@ class Interferometer:
         ----------
         model
             Gravitational-waveform model.
-        Theta
+        theta
             Parameters of the gravitational-wave signal.
 
         Returns
@@ -238,12 +234,12 @@ class Interferometer:
         h_tilde
             Frequency-domain strain (Hz^-1).
         """
-        h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, Theta)
-        F_plus, F_cross = self.calculate_pattern_functions(Theta.theta, Theta.phi, Theta.psi)
-        return h_tilde_plus * F_plus + h_tilde_cross * F_cross
+        h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, theta)
+        f_plus, f_cross = self.calculate_pattern_functions(theta.theta, theta.phi, theta.psi)
+        return h_tilde_plus * f_plus + h_tilde_cross * f_cross
 
     def inject_signal(
-        self, model: waveform.WaveformModel, Theta: SignalParameters
+        self, model: waveform.WaveformModel, theta: SignalParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.float64, numpy.complex128]:
         """
         Inject gravitational-wave signal into the interferometer.
@@ -252,7 +248,7 @@ class Interferometer:
         ----------
         model
             Gravitational-waveform model.
-        Theta
+        theta
             Parameters of the gravitational-wave signal.
 
         Returns
@@ -261,17 +257,17 @@ class Interferometer:
             Frequency-domain strain (Hz^-1).
         rho
             Optimal signal-to-noise ratio.
-        rho_MF
+        rho_mf
             Matched-filter signal-to-noise ratio.
         """
-        h_tilde = self.calculate_strain(model, Theta)
+        h_tilde = self.calculate_strain(model, theta)
 
         self.d_tilde += h_tilde
 
         rho = self.calculate_inner_product(h_tilde, h_tilde).real ** (1 / 2)
-        rho_MF = self.calculate_inner_product(h_tilde, self.d_tilde) / rho
+        rho_mf = self.calculate_inner_product(h_tilde, self.d_tilde) / rho
 
-        return h_tilde, rho, rho_MF
+        return h_tilde, rho, rho_mf
 
     def calculate_inner_product(
         self, a_tilde: numpy.typing.NDArray[numpy.complexfloating], b_tilde: numpy.typing.NDArray[numpy.complexfloating]
@@ -291,7 +287,7 @@ class Interferometer:
         inner_product
             Inner product.
         """
-        return calculate_inner_product(a_tilde, b_tilde, self.S_n, self.grid.Delta_f)
+        return calculate_inner_product(a_tilde, b_tilde, self.s_n, self.grid.delta_f)
 
 
 class LIGO(Interferometer):
@@ -316,8 +312,8 @@ class LIGO(Interferometer):
 def calculate_inner_product(
     a_tilde: numpy.typing.NDArray[numpy.complexfloating],
     b_tilde: numpy.typing.NDArray[numpy.complexfloating],
-    S_n: numpy.typing.NDArray[numpy.floating],
-    Delta_f: float,
+    s_n: numpy.typing.NDArray[numpy.floating],
+    delta_f: float,
 ) -> numpy.complex128:
     """
     Calculate the (complex) noise-weighted inner product of two frequency-domain functions.
@@ -328,9 +324,9 @@ def calculate_inner_product(
         First frequency-domain function (Hz^-1).
     b_tilde
         Second frequency-domain function (Hz^-1).
-    S_n
+    s_n
         Noise power spectral density (Hz^-1).
-    Delta_f
+    delta_f
         Frequency resolution (Hz).
 
     Returns
@@ -338,7 +334,7 @@ def calculate_inner_product(
     inner_product
         Inner product.
     """
-    assert a_tilde.size == b_tilde.size == S_n.size, "Input arrays must have the same size."
-    integrand = a_tilde.conj() * b_tilde / S_n
-    integral = numpy.sum(integrand, dtype=numpy.complex128) * Delta_f
+    assert a_tilde.size == b_tilde.size == s_n.size, "Input arrays must have the same size."
+    integrand = a_tilde.conj() * b_tilde / s_n
+    integral = numpy.sum(integrand, dtype=numpy.complex128) * delta_f
     return 4 * integral
