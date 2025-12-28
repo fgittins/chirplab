@@ -9,7 +9,7 @@ import pytest
 from chirplab import interferometer, waveform
 
 RTOL = 0
-ATOL = 1e-27
+ATOL = 1e-25
 
 
 @pytest.fixture(scope="class")

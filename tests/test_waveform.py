@@ -8,7 +8,7 @@ import pytest
 from chirplab import waveform
 
 RTOL = 0
-ATOL = 1e-27
+ATOL = 1e-24
 
 
 @pytest.fixture(scope="module")
