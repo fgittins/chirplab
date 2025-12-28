@@ -18,11 +18,6 @@ class Likelihood:
         Gravitational-wave interferometer.
     model
         Gravitational-waveform model.
-
-    Notes
-    -----
-    The likelihood is taken to be a Gaussian probability distribution. This follows from the hypothesis that a signal is
-    present in the data and buried within Gaussian noise.
     """
 
     def __init__(self, interferometer: interferometer.Interferometer, model: waveform.WaveformModel) -> None:
