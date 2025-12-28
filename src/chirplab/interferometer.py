@@ -238,37 +238,6 @@ class Interferometer:
         f_plus, f_cross = self.calculate_pattern_functions(theta.theta, theta.phi, theta.psi)
         return h_tilde_plus * f_plus + h_tilde_cross * f_cross
 
-    def inject_signal(
-        self, model: waveform.WaveformModel, theta: SignalParameters
-    ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.float64, numpy.complex128]:
-        """
-        Inject gravitational-wave signal into the interferometer.
-
-        Parameters
-        ----------
-        model
-            Gravitational-waveform model.
-        theta
-            Parameters of the gravitational-wave signal.
-
-        Returns
-        -------
-        h_tilde
-            Frequency-domain strain (Hz^-1).
-        rho
-            Optimal signal-to-noise ratio.
-        rho_mf
-            Matched-filter signal-to-noise ratio.
-        """
-        h_tilde = self.calculate_strain(model, theta)
-
-        self.d_tilde += h_tilde
-
-        rho = self.calculate_inner_product(h_tilde, h_tilde).real ** (1 / 2)
-        rho_mf = self.calculate_inner_product(h_tilde, self.d_tilde) / rho
-
-        return h_tilde, rho, rho_mf
-
     def calculate_inner_product(
         self, a_tilde: numpy.typing.NDArray[numpy.complexfloating], b_tilde: numpy.typing.NDArray[numpy.complexfloating]
     ) -> numpy.complex128:
@@ -288,6 +257,74 @@ class Interferometer:
             Inner product.
         """
         return calculate_inner_product(a_tilde, b_tilde, self.s_n, self.grid.delta_f)
+
+    def calculate_optimal_signal_to_noise_ratio(
+        self, h_tilde: numpy.typing.NDArray[numpy.complexfloating]
+    ) -> numpy.float64:
+        """
+        Calculate the optimal signal-to-noise ratio.
+
+        Parameters
+        ----------
+        h_tilde
+            Frequency-domain strain (Hz^-1).
+
+        Returns
+        -------
+        rho_opt
+            Optimal signal-to-noise ratio.
+        """
+        return self.calculate_inner_product(h_tilde, h_tilde).real ** (1 / 2)
+
+    def calculate_matched_filter_signal_to_noise_ratio(
+        self, h_tilde: numpy.typing.NDArray[numpy.complexfloating]
+    ) -> numpy.complex128:
+        """
+        Calculate the matched-filter signal-to-noise ratio.
+
+        Parameters
+        ----------
+        h_tilde
+            Frequency-domain strain (Hz^-1).
+
+        Returns
+        -------
+        rho_mf
+            Matched-filter signal-to-noise ratio.
+        """
+        rho_opt = self.calculate_optimal_signal_to_noise_ratio(h_tilde)
+        return self.calculate_inner_product(h_tilde, self.d_tilde) / rho_opt
+
+    def inject_signal(
+        self, model: waveform.WaveformModel, theta: SignalParameters
+    ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.float64, numpy.complex128]:
+        """
+        Inject gravitational-wave signal into the interferometer.
+
+        Parameters
+        ----------
+        model
+            Gravitational-waveform model.
+        theta
+            Parameters of the gravitational-wave signal.
+
+        Returns
+        -------
+        h_tilde
+            Frequency-domain strain (Hz^-1).
+        rho_opt
+            Optimal signal-to-noise ratio.
+        rho_mf
+            Matched-filter signal-to-noise ratio.
+        """
+        h_tilde = self.calculate_strain(model, theta)
+
+        self.d_tilde += h_tilde
+
+        rho_opt = self.calculate_optimal_signal_to_noise_ratio(h_tilde)
+        rho_mf = self.calculate_matched_filter_signal_to_noise_ratio(h_tilde)
+
+        return h_tilde, rho_opt, rho_mf
 
 
 class LIGO(Interferometer):

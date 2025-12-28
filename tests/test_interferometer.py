@@ -260,10 +260,10 @@ class TestInterferometer:
     ) -> None:
         """Test signal injection into interferometer."""
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, (1, numpy.inf))
-        h_tilde, rho, rho_mf = ifo.inject_signal(model_default, theta_default)
+        h_tilde, rho_opt, rho_mf = ifo.inject_signal(model_default, theta_default)
 
         assert not numpy.allclose(h_tilde, 0, RTOL, ATOL)
-        assert rho > 0
+        assert rho_opt > 0
         assert rho_mf > 0
 
     def test_inject_signal_updates_data(
@@ -276,7 +276,7 @@ class TestInterferometer:
         """Test that signal injection updates data stream."""
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, (1, numpy.inf))
         d_tilde_before = ifo.d_tilde.copy()
-        h_tilde, rho, rho_mf = ifo.inject_signal(model_default, theta_default)
+        h_tilde, rho_opt, rho_mf = ifo.inject_signal(model_default, theta_default)
 
         assert not numpy.array_equal(ifo.d_tilde, d_tilde_before)
         assert numpy.array_equal(ifo.d_tilde, d_tilde_before + h_tilde)
@@ -292,9 +292,9 @@ class TestInterferometer:
         ifo = interferometer.Interferometer(
             grid_default, amplitude_spectral_density_file_default, (1, numpy.inf), is_zero_noise=True
         )
-        h_tilde, rho, rho_mf = ifo.inject_signal(model_default, theta_default)
+        h_tilde, rho_opt, rho_mf = ifo.inject_signal(model_default, theta_default)
 
-        assert numpy.isclose(rho, abs(rho_mf))
+        assert numpy.isclose(rho_opt, abs(rho_mf))
 
 
 class TestLIGO:
@@ -329,10 +329,10 @@ class TestLIGO:
     ) -> None:
         """Test signal injection into LIGO."""
         ligo = interferometer.LIGO(grid_default)
-        h_tilde, rho, rho_mf = ligo.inject_signal(model_default, theta_default)
+        h_tilde, rho_opt, rho_mf = ligo.inject_signal(model_default, theta_default)
 
         assert not numpy.allclose(h_tilde, 0, RTOL, ATOL)
-        assert rho > 0
+        assert rho_opt > 0
         assert rho_mf > 0
 
 
