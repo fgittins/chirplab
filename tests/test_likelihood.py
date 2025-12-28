@@ -11,12 +11,12 @@ from chirplab import interferometer, likelihood, waveform
 @pytest.fixture(scope="class")
 def injected_interferometer_default(
     grid_default: interferometer.Grid,
-    rng_default: numpy.random.Generator,
     model_default: waveform.WaveformModel,
     theta_default: interferometer.SignalParameters,
 ) -> interferometer.Interferometer:
     """Return default injected interferometer for testing."""
-    ifo = interferometer.LIGO(grid_default, rng=rng_default)
+    rng = numpy.random.default_rng(42)
+    ifo = interferometer.LIGO(grid_default, rng=rng)
     ifo.inject_signal(model_default, theta_default)
     return ifo
 
