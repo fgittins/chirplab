@@ -113,7 +113,7 @@ class TestGrid:
     def test_generate_gaussian_noise_endpoints_zero(
         self, grid_default: interferometer.Grid, rng_default: numpy.random.Generator
     ) -> None:
-        """Test that generate_gaussian_noise returns noise that is zero at direct-current and Nyquist frequencies."""
+        """Test that generate_gaussian_noise returns zero noise at direct-current and Nyquist frequencies."""
         n_tilde = grid_default.generate_gaussian_noise(rng_default)
 
         assert n_tilde[0] == 0
@@ -135,7 +135,7 @@ class TestGrid:
         atol = 0.02
 
         assert numpy.isclose(n_tilde[1:-2].mean(), 0, RTOL, atol)
-        assert numpy.isclose((numpy.abs(n_tilde[1:-2]) ** 2).mean(), 1 / 2 * grid_default.t_d, RTOL, atol)
+        assert numpy.isclose((n_tilde[1:-2].conj() * n_tilde[1:-2]).mean(), 1 / 2 * grid_default.t_d, RTOL, atol)
 
 
 class TestInterferometer:
