@@ -28,12 +28,12 @@ class Prior:
 
     def transform(self, u: float) -> float:
         """
-        Transform unit cube samples to prior space.
+        Transform sample between 0 and 1 to prior space.
 
         Parameters
         ----------
         u
-            Random sample from the unit.
+            Random sample between 0 and 1.
 
         Returns
         -------
@@ -61,12 +61,12 @@ class DeltaFunction(Prior):
 
     def transform(self, u: float) -> float:
         """
-        Transform unit cube samples to prior space.
+        Transform sample between 0 and 1 to prior space.
 
         Parameters
         ----------
         u
-            Random sample from the unit.
+            Random sample between 0 and 1.
 
         Returns
         -------
@@ -97,12 +97,12 @@ class Uniform(Prior):
 
     def transform(self, u: float) -> float:
         """
-        Transform unit cube samples to prior space.
+        Transform sample between 0 and 1 to prior space.
 
         Parameters
         ----------
         u
-            Random sample from the unit.
+            Random sample between 0 and 1.
 
         Returns
         -------
@@ -135,12 +135,12 @@ class Cosine(Prior):
 
     def transform(self, u: float) -> numpy.float64:
         """
-        Transform unit cube samples to prior space.
+        Transform sample between 0 and 1 to prior space.
 
         Parameters
         ----------
         u
-            Random sample from the unit.
+            Random sample between 0 and 1.
 
         Returns
         -------
@@ -174,12 +174,12 @@ class Sine(Prior):
 
     def transform(self, u: float) -> numpy.float64:
         """
-        Transform unit cube samples to prior space.
+        Transform sample between 0 and 1 to prior space.
 
         Parameters
         ----------
         u
-            Random sample from the unit.
+            Random sample between 0 and 1.
 
         Returns
         -------
@@ -226,10 +226,10 @@ class Priors(list[Prior]):
 
     @property
     def periodic_indices(self) -> None | list[int]:
-        """Get indices of periodic parameters."""
+        """Indices of periodic parameters."""
         return [i for i, prior in enumerate(self) if prior.is_periodic] or None
 
     @property
     def reflective_indices(self) -> None | list[int]:
-        """Get indices of reflective parameters."""
+        """Indices of reflective parameters."""
         return [i for i, prior in enumerate(self) if prior.is_reflective] or None
