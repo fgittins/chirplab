@@ -263,7 +263,7 @@ class TestInterferometer:
         theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test signal injection into interferometer."""
-        ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, (1, numpy.inf))
+        ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default)
         h_tilde, rho_opt, rho_mf = ifo.inject_signal(model_default, theta_default)
 
         assert not numpy.allclose(h_tilde, 0, RTOL, ATOL)
@@ -278,7 +278,7 @@ class TestInterferometer:
         theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test that signal injection updates data stream."""
-        ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, (1, numpy.inf))
+        ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default)
         d_tilde_before = ifo.d_tilde.copy()
         h_tilde, rho_opt, rho_mf = ifo.inject_signal(model_default, theta_default)
 
@@ -293,9 +293,7 @@ class TestInterferometer:
         theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test matched filter signal-to-noise ratio equals optimal signal-to-noise ratio for zero noise."""
-        ifo = interferometer.Interferometer(
-            grid_default, amplitude_spectral_density_file_default, (1, numpy.inf), is_zero_noise=True
-        )
+        ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, is_zero_noise=True)
         h_tilde, rho_opt, rho_mf = ifo.inject_signal(model_default, theta_default)
 
         assert numpy.isclose(rho_opt, abs(rho_mf))
