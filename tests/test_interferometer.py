@@ -35,10 +35,12 @@ def interferometer_default(
 class TestGrid:
     """Tests for the Grid dataclass."""
 
-    def test_initialisation(self, grid_default: interferometer.Grid) -> None:
+    def test_initialisation(self) -> None:
         """Test that Grid can be initialised with valid parameters."""
-        assert grid_default.t_d == 4
-        assert grid_default.f_s == 4096
+        grid = interferometer.Grid(t_d=4, f_s=4096)
+
+        assert grid.t_d == 4
+        assert grid.f_s == 4096
 
     def test_invalid_product_t_d_f_s(self) -> None:
         """Test that Grid raises ValueError when t_d * f_s is not an integer."""
@@ -142,10 +144,12 @@ class TestInterferometer:
     """Tests for the Interferometer class."""
 
     def test_initialisation(
-        self, grid_default: interferometer.Grid, interferometer_default: interferometer.Interferometer
+        self, grid_default: interferometer.Grid, amplitude_spectral_density_file_default: Path
     ) -> None:
         """Test that Interferometer can be initialised."""
-        assert interferometer_default.grid == grid_default
+        ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default)
+
+        assert ifo.grid == grid_default
 
     def test_frequency_band(
         self, grid_default: interferometer.Grid, amplitude_spectral_density_file_default: Path

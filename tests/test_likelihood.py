@@ -45,14 +45,13 @@ class TestLikelihood:
     """Tests for the Likelihood class."""
 
     def test_initialisation(
-        self,
-        likelihood_default: likelihood.Likelihood,
-        model_default: waveform.WaveformModel,
-        injected_interferometer_default: interferometer.Interferometer,
+        self, model_default: waveform.WaveformModel, injected_interferometer_default: interferometer.Interferometer
     ) -> None:
         """Test that Likelihood can be initialised with an interferometer and waveform model."""
-        assert likelihood_default.interferometer == injected_interferometer_default
-        assert likelihood_default.model == model_default
+        like = likelihood.Likelihood(injected_interferometer_default, model_default)
+
+        assert like.interferometer == injected_interferometer_default
+        assert like.model == model_default
 
     def test_log_likelihood_noise_is_real(self, likelihood_default: likelihood.Likelihood) -> None:
         """Test that the noise log-likelihood is a real number."""
