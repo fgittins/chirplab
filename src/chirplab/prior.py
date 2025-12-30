@@ -4,7 +4,14 @@ from typing import Literal
 
 import numpy
 
+from . import constants
+
 type BOUNDARY_TYPES = None | Literal["periodic", "reflective"]
+
+# TODO: add uniform in comoving volume prior
+# TODO: add constraint prior
+# TODO: add Gaussian prior
+# TODO: write sample method
 
 
 class Prior:
@@ -127,7 +134,7 @@ class Cosine(Prior):
     """
 
     def __init__(
-        self, x_min: float = -numpy.pi / 2, x_max: float = numpy.pi / 2, boundary: BOUNDARY_TYPES = None
+        self, x_min: float = -constants.PI / 2, x_max: float = constants.PI / 2, boundary: BOUNDARY_TYPES = None
     ) -> None:
         super().__init__(boundary)
         self.x_min = x_min
@@ -167,7 +174,7 @@ class Sine(Prior):
         Boundary condition for the prior.
     """
 
-    def __init__(self, x_min: float = 0, x_max: float = numpy.pi, boundary: BOUNDARY_TYPES = None) -> None:
+    def __init__(self, x_min: float = 0, x_max: float = constants.PI, boundary: BOUNDARY_TYPES = None) -> None:
         super().__init__(boundary)
         self.x_min = x_min
         self.x_max = x_max
