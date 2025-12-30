@@ -1,13 +1,14 @@
 """Module for gravitational-waveform models."""
 
 from dataclasses import dataclass
+from typing import Final
 
 import numpy
 
-C = 299792458.0
-G = 6.6743e-11
-M_SUN = 1.988409870698051e30
-PC = 3.085677581491367e16
+C: Final[float] = 299792458.0
+G: Final[float] = 6.6743e-11
+M_SUN: Final[float] = 1.988409870698051e30
+PC: Final[float] = 3.085677581491367e16
 
 
 @dataclass
@@ -51,7 +52,17 @@ class WaveformParameters:
 
 
 class WaveformModel:
-    """Gravitational-waveform model base class."""
+    """
+    Gravitational-waveform model base class.
+
+    Parameters
+    ----------
+    f_max
+        Maximum frequency for the waveform (Hz).
+    """
+
+    def __init__(self, f_max: float = numpy.inf) -> None:
+        self.f_max = f_max
 
     def calculate_strain_polarisations(
         self, f: numpy.typing.NDArray[numpy.floating], theta: WaveformParameters
@@ -78,11 +89,23 @@ class WaveformModel:
 
 
 class NewtonianWaveformModel(WaveformModel):
-    """Gravitational-waveform model using the leading-order Newtonian approximation."""
+    """
+    Gravitational-waveform model using the leading-order Newtonian approximation.
 
-    @staticmethod
+    Parameters
+    ----------
+    f_max
+        Maximum frequency for the waveform (Hz).
+    is_isco_cutoff
+        Whether to apply a cutoff at the innermost stable circular orbit frequency.
+    """
+
+    def __init__(self, f_max: float = numpy.inf, is_isco_cutoff: bool = True) -> None:
+        super().__init__(f_max)
+        self.is_isco_cutoff = is_isco_cutoff
+
     def calculate_strain_polarisations(
-        f: numpy.typing.NDArray[numpy.floating], theta: WaveformParameters
+        self, f: numpy.typing.NDArray[numpy.floating], theta: WaveformParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.
@@ -107,15 +130,18 @@ class NewtonianWaveformModel(WaveformModel):
 
         References
         ----------
-        [1]  M. Maggiore, Gravitational Waves. Volume 1: Theory and Experiments, (Oxford University Press, 2008).
+        [1]  M. Maggiore, Gravitational Waves. Volume 1: Theory and Experiments (Oxford University Press, 2008).
         """
         h_tilde_plus = numpy.zeros_like(f, numpy.complex128)
         h_tilde_cross = numpy.zeros_like(f, numpy.complex128)
 
-        # NOTE: model does not apply above the innermost stable circular orbit frequency
-        f_isco = calculate_isco_frequency(theta.m_total)
-        valid_mask = f <= f_isco
-        f_valid = f[valid_mask]
+        if self.is_isco_cutoff:
+            f_isco = calculate_isco_frequency(theta.m_total)
+            valid_mask = (f > 0) & (f <= f_isco) & (f <= self.f_max)
+            f_valid = f[valid_mask]
+        else:
+            valid_mask = (f > 0) & (f <= self.f_max)
+            f_valid = f[valid_mask]
 
         a = (
             (5 / 24) ** (1 / 2)
