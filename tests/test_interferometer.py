@@ -2,11 +2,15 @@
 
 from dataclasses import replace
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy
 import pytest
 
-from chirplab import interferometer, waveform
+from chirplab import constants, interferometer
+
+if TYPE_CHECKING:
+    from chirplab import waveform
 
 RTOL = 0
 ATOL = 1e-25
@@ -209,11 +213,11 @@ class TestInterferometer:
         "theta, phi, psi, f_plus_expected, f_cross_expected",
         [
             (0, 0, 0, 1, 0),
-            (numpy.pi / 2, 0, 0, 1 / 2, 0),
-            (0, numpy.pi / 2, 0, -1, 0),
-            (0, 0, numpy.pi / 4, 0, 1),
-            (numpy.pi / 2, 0, numpy.pi / 4, 0, 1 / 2),
-            (0, numpy.pi / 2, numpy.pi / 4, 0, -1),
+            (constants.PI / 2, 0, 0, 1 / 2, 0),
+            (0, constants.PI / 2, 0, -1, 0),
+            (0, 0, constants.PI / 4, 0, 1),
+            (constants.PI / 2, 0, constants.PI / 4, 0, 1 / 2),
+            (0, constants.PI / 2, constants.PI / 4, 0, -1),
         ],
     )
     def test_pattern_functions(
@@ -232,9 +236,9 @@ class TestInterferometer:
 
     def test_pattern_functions_polarisation(self) -> None:
         """Test that pattern functions rotate correctly with polarisation angle."""
-        theta, phi = numpy.pi / 4, numpy.pi / 6
+        theta, phi = constants.PI / 4, constants.PI / 6
         f_plus_0, f_cross_0 = interferometer.Interferometer.calculate_pattern_functions(theta, phi, 0)
-        f_plus_45, f_cross_45 = interferometer.Interferometer.calculate_pattern_functions(theta, phi, numpy.pi / 4)
+        f_plus_45, f_cross_45 = interferometer.Interferometer.calculate_pattern_functions(theta, phi, constants.PI / 4)
 
         assert numpy.isclose(f_plus_0, f_cross_45)
         assert numpy.isclose(f_cross_0, -f_plus_45)

@@ -3,7 +3,7 @@
 import numpy
 import pytest
 
-from chirplab import prior
+from chirplab import constants, prior
 
 
 class TestPrior:
@@ -144,14 +144,14 @@ class TestCosine:
         """Test Cosine prior initialisation with default parameters."""
         p = prior.Cosine()
 
-        assert p.x_min == -numpy.pi / 2
-        assert p.x_max == numpy.pi / 2
+        assert p.x_min == -constants.PI / 2
+        assert p.x_max == constants.PI / 2
         assert p.is_periodic is False
         assert p.is_reflective is False
 
     def test_initialisation_custom(self) -> None:
         """Test Cosine prior initialisation with custom parameters."""
-        x_min, x_max = 0, numpy.pi
+        x_min, x_max = 0, constants.PI
         p = prior.Cosine(x_min, x_max)
 
         assert p.x_min == x_min
@@ -165,7 +165,7 @@ class TestCosine:
 
     def test_transform_boundaries(self) -> None:
         """Test that transform returns correct boundary values."""
-        x_min, x_max = -numpy.pi / 4, numpy.pi / 4
+        x_min, x_max = -constants.PI / 4, constants.PI / 4
         p = prior.Cosine(x_min, x_max)
 
         assert numpy.isclose(p.transform(0), x_min)
@@ -189,7 +189,7 @@ class TestCosine:
 
     def test_transform_symmetric_range(self) -> None:
         """Test Cosine prior with symmetric range around zero."""
-        p = prior.Cosine(-numpy.pi / 3, numpy.pi / 3)
+        p = prior.Cosine(-constants.PI / 3, constants.PI / 3)
         x = p.transform(0.5)
 
         assert numpy.isclose(x, 0)
@@ -203,13 +203,13 @@ class TestSine:
         p = prior.Sine()
 
         assert p.x_min == 0
-        assert p.x_max == numpy.pi
+        assert p.x_max == constants.PI
         assert p.is_periodic is False
         assert p.is_reflective is False
 
     def test_initialisation_custom(self) -> None:
         """Test Sine prior initialisation with custom parameters."""
-        x_min, x_max = numpy.pi / 4, 3 * numpy.pi / 4
+        x_min, x_max = constants.PI / 4, 3 * constants.PI / 4
         p = prior.Sine(x_min, x_max)
 
         assert p.x_min == x_min
@@ -223,7 +223,7 @@ class TestSine:
 
     def test_transform_boundaries(self) -> None:
         """Test that transform returns correct boundary values."""
-        x_min, x_max = numpy.pi / 4, 3 * numpy.pi / 4
+        x_min, x_max = constants.PI / 4, 3 * constants.PI / 4
         p = prior.Sine(x_min, x_max)
 
         assert p.transform(0) == x_min
@@ -250,7 +250,7 @@ class TestSine:
         p = prior.Sine()
         x = p.transform(0.5)
 
-        assert x == numpy.pi / 2
+        assert x == constants.PI / 2
 
 
 class TestPriors:

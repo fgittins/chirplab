@@ -5,7 +5,7 @@ from dataclasses import replace
 import numpy
 import pytest
 
-from chirplab import waveform
+from chirplab import constants, waveform
 
 RTOL = 0
 ATOL = 1e-24
@@ -15,10 +15,10 @@ ATOL = 1e-24
 def theta_default() -> waveform.WaveformParameters:
     """Return default set of signal parameters for testing."""
     return waveform.WaveformParameters(
-        m_1=30 * waveform.M_SUN,
-        m_2=30 * waveform.M_SUN,
-        r=500e6 * waveform.PC,
-        iota=numpy.pi / 3,
+        m_1=30 * constants.M_SUN,
+        m_2=30 * constants.M_SUN,
+        r=500e6 * constants.PC,
+        iota=constants.PI / 3,
         t_c=100,
         phi_c=1.5,
     )
@@ -36,30 +36,30 @@ class TestWaveformParameters:
     def test_initialisation(self) -> None:
         """Test that WaveformParameters can be initialised with all required fields."""
         theta = waveform.WaveformParameters(
-            m_1=30 * waveform.M_SUN,
-            m_2=30 * waveform.M_SUN,
-            r=500e6 * waveform.PC,
-            iota=numpy.pi / 3,
+            m_1=30 * constants.M_SUN,
+            m_2=30 * constants.M_SUN,
+            r=500e6 * constants.PC,
+            iota=constants.PI / 3,
             t_c=100,
             phi_c=1.5,
         )
 
-        assert theta.m_1 == 30 * waveform.M_SUN
-        assert theta.m_2 == 30 * waveform.M_SUN
-        assert theta.r == 500e6 * waveform.PC
-        assert theta.iota == numpy.pi / 3
+        assert theta.m_1 == 30 * constants.M_SUN
+        assert theta.m_2 == 30 * constants.M_SUN
+        assert theta.r == 500e6 * constants.PC
+        assert theta.iota == constants.PI / 3
         assert theta.t_c == 100
         assert theta.phi_c == 1.5
 
     def test_total_mass_property(self, theta_default: waveform.WaveformParameters) -> None:
         """Test that the m_total property correctly calculates total mass."""
-        assert theta_default.m_total == 60 * waveform.M_SUN
+        assert theta_default.m_total == 60 * constants.M_SUN
 
     @pytest.mark.parametrize(
         "m_1, m_2",
         [
-            (30 * waveform.M_SUN, 30 * waveform.M_SUN),
-            (30 * waveform.M_SUN, 15 * waveform.M_SUN),
+            (30 * constants.M_SUN, 30 * constants.M_SUN),
+            (30 * constants.M_SUN, 15 * constants.M_SUN),
         ],
     )
     def test_chirp_mass_property(self, m_1: float, m_2: float, theta_default: waveform.WaveformParameters) -> None:
@@ -76,7 +76,7 @@ class TestWaveformModel:
         """Test that WaveformModel can be initialised with default and custom f_max."""
         model_default = waveform.WaveformModel()
 
-        assert model_default.f_max == numpy.inf
+        assert model_default.f_max == constants.INF
 
         custom_f_max = 2048
         model_custom = waveform.WaveformModel(custom_f_max)
@@ -100,7 +100,7 @@ class TestNewtonianWaveformModel:
         """Test that NewtonianWaveformModel can be initialised."""
         model_default = waveform.NewtonianWaveformModel()
 
-        assert model_default.f_max == numpy.inf
+        assert model_default.f_max == constants.INF
         assert model_default.is_isco_cutoff is True
 
         f_max = 2048
@@ -172,7 +172,7 @@ class TestNewtonianWaveformModel:
         theta_default: waveform.WaveformParameters,
     ) -> None:
         """Test waveform when the orbit is edge on."""
-        theta = replace(theta_default, iota=numpy.pi / 2)
+        theta = replace(theta_default, iota=constants.PI / 2)
         h_tilde_plus, h_tilde_cross = model_default.calculate_strain_polarisations(f_default, theta)
 
         assert not numpy.allclose(h_tilde_plus, 0, RTOL, ATOL)
@@ -236,12 +236,12 @@ class TestCalculateInnermostStableCircularOrbitFrequency:
 
     def test_returns_positive_frequency(self) -> None:
         """Test that the function returns a positive frequency."""
-        assert waveform.calculate_isco_frequency(15 * waveform.M_SUN) > 0
+        assert waveform.calculate_isco_frequency(15 * constants.M_SUN) > 0
 
     def test_frequency_scales_inversely_with_mass(self) -> None:
         """Test that ISCO frequency scales inversely with mass."""
         ratio = 2
-        m_small = 10 * waveform.M_SUN
+        m_small = 10 * constants.M_SUN
         m_large = 2 * m_small
         f_isco_small = waveform.calculate_isco_frequency(m_small)
         f_isco_large = waveform.calculate_isco_frequency(m_large)

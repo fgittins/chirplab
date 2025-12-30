@@ -1,11 +1,15 @@
 """Unit tests for the likelihood module."""
 
 from dataclasses import replace
+from typing import TYPE_CHECKING
 
 import numpy
 import pytest
 
-from chirplab import interferometer, likelihood, waveform
+from chirplab import constants, interferometer, likelihood
+
+if TYPE_CHECKING:
+    from chirplab import waveform
 
 
 @pytest.fixture(scope="class")
@@ -104,7 +108,7 @@ class TestLikelihood:
     ) -> None:
         """Test log-likelihood with incorrect signal parameters."""
         like = likelihood.Likelihood(injected_interferometer_zero_noise_default, model_default)
-        theta_wrong = replace(theta_default, m_1=20 * waveform.M_SUN, m_2=20 * waveform.M_SUN, r=2 * theta_default.r)
+        theta_wrong = replace(theta_default, m_1=20 * constants.M_SUN, m_2=20 * constants.M_SUN, r=2 * theta_default.r)
         ln_l_true = like.calculate_log_likelihood(theta_default)
         ln_l_wrong = like.calculate_log_likelihood(theta_wrong)
 

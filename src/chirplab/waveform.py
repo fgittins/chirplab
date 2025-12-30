@@ -1,14 +1,10 @@
 """Module for gravitational-waveform models."""
 
 from dataclasses import dataclass
-from typing import Final
 
 import numpy
 
-C: Final[float] = 299792458.0
-G: Final[float] = 6.6743e-11
-M_SUN: Final[float] = 1.988409870698051e30
-PC: Final[float] = 3.085677581491367e16
+from . import constants
 
 
 @dataclass
@@ -61,7 +57,7 @@ class WaveformModel:
         Maximum frequency for the waveform (Hz).
     """
 
-    def __init__(self, f_max: float = numpy.inf) -> None:
+    def __init__(self, f_max: float = constants.INF) -> None:
         self.f_max = f_max
 
     def calculate_strain_polarisations(
@@ -100,7 +96,7 @@ class NewtonianWaveformModel(WaveformModel):
         Whether to apply a cutoff at the innermost stable circular orbit frequency.
     """
 
-    def __init__(self, f_max: float = numpy.inf, is_isco_cutoff: bool = True) -> None:
+    def __init__(self, f_max: float = constants.INF, is_isco_cutoff: bool = True) -> None:
         super().__init__(f_max)
         self.is_isco_cutoff = is_isco_cutoff
 
@@ -145,16 +141,16 @@ class NewtonianWaveformModel(WaveformModel):
 
         a = (
             (5 / 24) ** (1 / 2)
-            * (1 / numpy.pi ** (2 / 3))
-            * (C / theta.r)
-            * (G * theta.m_chirp / C**3) ** (5 / 6)
+            * (1 / constants.PI ** (2 / 3))
+            * (constants.C / theta.r)
+            * (constants.G * theta.m_chirp / constants.C**3) ** (5 / 6)
             * (1 / f_valid ** (7 / 6))
         )
         psi = (
-            2 * numpy.pi * f_valid * theta.t_c
+            2 * constants.PI * f_valid * theta.t_c
             - theta.phi_c
-            - numpy.pi / 4
-            + 3 / 4 * (G * theta.m_chirp / C**3 * 8 * numpy.pi * f_valid) ** (-5 / 3)
+            - constants.PI / 4
+            + 3 / 4 * (constants.G * theta.m_chirp / constants.C**3 * 8 * constants.PI * f_valid) ** (-5 / 3)
         )
 
         h_tilde_plus[valid_mask] = a * numpy.exp(1j * psi) * (1 + numpy.cos(theta.iota) ** 2) / 2
@@ -177,4 +173,4 @@ def calculate_isco_frequency(m_total: float) -> float:
     f_isco
         Innermost stable circular orbit frequency (Hz).
     """
-    return 1 / (6 ** (3 / 2) * numpy.pi) * C**3 / (G * m_total)
+    return 1 / (6 ** (3 / 2) * constants.PI) * constants.C**3 / (constants.G * m_total)

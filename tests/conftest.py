@@ -3,21 +3,21 @@
 import numpy
 import pytest
 
-from chirplab import interferometer, waveform
+from chirplab import constants, interferometer, waveform
 
 
 @pytest.fixture(scope="session")
 def theta_default() -> interferometer.SignalParameters:
     """Return default set of signal parameters for testing."""
     return interferometer.SignalParameters(
-        m_1=30 * waveform.M_SUN,
-        m_2=30 * waveform.M_SUN,
-        r=500e6 * waveform.PC,
-        iota=numpy.pi / 3,
+        m_1=30 * constants.M_SUN,
+        m_2=30 * constants.M_SUN,
+        r=500e6 * constants.PC,
+        iota=constants.PI / 3,
         t_c=100,
         phi_c=1.5,
         theta=0,
-        phi=numpy.pi / 4,
+        phi=constants.PI / 4,
         psi=0.5,
     )
 
