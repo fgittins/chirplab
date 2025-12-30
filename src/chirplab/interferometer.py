@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy
 
-from . import waveform
+from . import constants, waveform
 
 PWD = Path(__file__).parent
 
@@ -149,7 +149,7 @@ class Interferometer:
         self,
         grid: Grid,
         amplitude_spectral_density_file: Path,
-        band: tuple[float, float] = (0, numpy.inf),
+        band: tuple[float, float] = (0, constants.INF),
         rng: None | numpy.random.Generator = None,
         is_zero_noise: bool = False,
     ) -> None:
