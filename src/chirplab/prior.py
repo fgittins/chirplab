@@ -205,12 +205,12 @@ class Priors(list[Prior]):
 
     Parameters
     ----------
-    priors
+    priors_list
         List of prior distributions.
     """
 
-    def __init__(self, priors: list[Prior]) -> None:
-        super().__init__(priors)
+    def __init__(self, priors_list: list[Prior]) -> None:
+        super().__init__(priors_list)
 
     def transform(self, u: numpy.typing.NDArray[numpy.floating]) -> numpy.typing.NDArray[numpy.floating]:
         """
