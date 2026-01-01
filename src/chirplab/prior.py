@@ -1,5 +1,6 @@
 """Module for prior distributions."""
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Literal
 
@@ -15,7 +16,7 @@ type BOUNDARY_TYPES = None | Literal["periodic", "reflective"]
 # TODO: write sample method
 
 
-class Prior:
+class Prior(ABC):
     """
     Prior base class.
 
@@ -25,6 +26,7 @@ class Prior:
         Boundary condition for the prior.
     """
 
+    @abstractmethod
     def __init__(self, boundary: BOUNDARY_TYPES = None) -> None:
         is_periodic = is_reflective = False
         if boundary == "periodic":
@@ -34,6 +36,7 @@ class Prior:
         self.is_periodic = is_periodic
         self.is_reflective = is_reflective
 
+    @abstractmethod
     def transform(self, u: float) -> float:
         """
         Transform sample between 0 and 1 to prior space.
@@ -48,8 +51,7 @@ class Prior:
         x
             Transformed sample in prior space.
         """
-        msg = "Priors must implement this method."
-        raise NotImplementedError(msg)
+        pass
 
 
 class Uniform(Prior):

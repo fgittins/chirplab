@@ -1,5 +1,6 @@
 """Module for gravitational-waveform models."""
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import numpy
@@ -47,7 +48,7 @@ class WaveformParameters:
         return m_chirp
 
 
-class WaveformModel:
+class WaveformModel(ABC):
     """
     Gravitational-waveform model base class.
 
@@ -57,9 +58,11 @@ class WaveformModel:
         Maximum frequency for the waveform (Hz).
     """
 
+    @abstractmethod
     def __init__(self, f_max: float = constants.INF) -> None:
         self.f_max = f_max
 
+    @abstractmethod
     def calculate_strain_polarisations(
         self, f: numpy.typing.NDArray[numpy.floating], theta: WaveformParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
@@ -80,8 +83,7 @@ class WaveformModel:
         h_tilde_cross
             Frequency-domain cross-polarisation strain (Hz^-1).
         """
-        msg = "Waveform models must implement this method."
-        raise NotImplementedError(msg)
+        pass
 
 
 class NewtonianWaveformModel(WaveformModel):

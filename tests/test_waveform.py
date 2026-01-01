@@ -69,30 +69,6 @@ class TestWaveformParameters:
         assert theta.m_chirp == (theta.m_1 * theta.m_2) ** (3 / 5) / (theta.m_1 + theta.m_2) ** (1 / 5)
 
 
-class TestWaveformModel:
-    """Tests for the WaveformModel base class."""
-
-    def test_initialisation(self) -> None:
-        """Test that WaveformModel can be initialised with default and custom f_max."""
-        model_default = waveform.WaveformModel()
-
-        assert model_default.f_max == constants.INF
-
-        custom_f_max = 2048
-        model_custom = waveform.WaveformModel(custom_f_max)
-
-        assert model_custom.f_max == custom_f_max
-
-    def test_base_class_not_implemented(
-        self, f_default: numpy.typing.NDArray[numpy.float64], theta_default: waveform.WaveformParameters
-    ) -> None:
-        """Test that the base WaveformModel class raises NotImplementedError."""
-        model = waveform.WaveformModel()
-
-        with pytest.raises(NotImplementedError):
-            model.calculate_strain_polarisations(f_default, theta_default)
-
-
 class TestNewtonianWaveformModel:
     """Tests for the NewtonianWaveformModel class."""
 

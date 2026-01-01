@@ -6,38 +6,6 @@ import pytest
 from chirplab import constants, prior
 
 
-class TestPrior:
-    """Tests for the Prior base class."""
-
-    def test_initialisation_no_boundary(self) -> None:
-        """Test Prior initialisation with no boundary condition."""
-        p = prior.Prior()
-
-        assert p.is_periodic is False
-        assert p.is_reflective is False
-
-    def test_initialisation_periodic_boundary(self) -> None:
-        """Test Prior initialisation with periodic boundary condition."""
-        p = prior.Prior("periodic")
-
-        assert p.is_periodic is True
-        assert p.is_reflective is False
-
-    def test_initialisation_reflective_boundary(self) -> None:
-        """Test Prior initialisation with reflective boundary condition."""
-        p = prior.Prior("reflective")
-
-        assert p.is_periodic is False
-        assert p.is_reflective is True
-
-    def test_transform_not_implemented(self) -> None:
-        """Test that base Prior.transform raises NotImplementedError."""
-        p = prior.Prior()
-
-        with pytest.raises(NotImplementedError, match="Priors must implement this method"):
-            p.transform(0.5)
-
-
 class TestUniform:
     """Tests for the Uniform prior."""
 
