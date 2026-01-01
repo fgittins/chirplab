@@ -9,6 +9,9 @@ from . import constants, waveform
 
 PWD = Path(__file__).parent
 
+# TODO: add multiple interferometers
+# TODO: include right ascension and declination for sky location
+
 
 @dataclass
 class SignalParameters(waveform.WaveformParameters):
@@ -65,7 +68,7 @@ class Grid:
             raise ValueError(msg)
 
         if self.n % 2 != 0:
-            msg = "The number of time samples n must be even."
+            msg = "The product of t_d and f_s must be even."
             raise ValueError(msg)
 
     @property

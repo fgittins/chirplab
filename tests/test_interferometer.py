@@ -53,7 +53,7 @@ class TestGrid:
 
     def test_invalid_odd_n(self) -> None:
         """Test that Grid raises ValueError when n is odd."""
-        with pytest.raises(ValueError, match="The number of time samples n must be even"):
+        with pytest.raises(ValueError, match="The product of t_d and f_s must be even"):
             interferometer.Grid(t_d=1, f_s=4095)
 
     def test_f_max_property(self, grid_default: interferometer.Grid) -> None:
