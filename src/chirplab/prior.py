@@ -111,7 +111,7 @@ class Cosine(Prior):
         self.x_min = x_min
         self.x_max = x_max
 
-    def transform(self, u: float) -> float:
+    def transform(self, u: float) -> numpy.float64:
         """
         Transform sample between 0 and 1 to prior space.
 
@@ -127,7 +127,7 @@ class Cosine(Prior):
         """
         sin_min = numpy.sin(self.x_min)
         sin_max = numpy.sin(self.x_max)
-        x: float = numpy.arcsin(sin_min + (sin_max - sin_min) * u)
+        x: numpy.float64 = numpy.arcsin(sin_min + (sin_max - sin_min) * u)
         return x
 
 
@@ -150,7 +150,7 @@ class Sine(Prior):
         self.x_min = x_min
         self.x_max = x_max
 
-    def transform(self, u: float) -> float:
+    def transform(self, u: float) -> numpy.float64:
         """
         Transform sample between 0 and 1 to prior space.
 
@@ -166,7 +166,7 @@ class Sine(Prior):
         """
         cos_min = numpy.cos(self.x_min)
         cos_max = numpy.cos(self.x_max)
-        x: float = numpy.arccos(cos_min + (cos_max - cos_min) * u)
+        x: numpy.float64 = numpy.arccos(cos_min + (cos_max - cos_min) * u)
         return x
 
 
