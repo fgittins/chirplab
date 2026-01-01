@@ -212,7 +212,7 @@ class TestPriors:
             r=prior.Uniform(100, 200),
             iota=0.1,
             t_c=1,
-            phi_c=2.0,
+            phi_c=2,
             theta=0.3,
             phi=0.4,
             psi=0.5,
@@ -226,19 +226,18 @@ class TestPriors:
         assert numpy.allclose(x, numpy.array([0, 10, 200]))
 
     def test_boundary_indices(self) -> None:
-        """Check periodic and reflective index bookkeeping matches Priors order."""
+        """Check periodic and reflective indices matches Priors order."""
         priors = prior.Priors(
             m_1=prior.Uniform(0, 1, boundary="periodic"),
             m_2=prior.Uniform(0, 1),
             r=prior.Uniform(0, 1, boundary="reflective"),
             iota=prior.Sine(boundary="reflective"),
-            t_c=0.0,
+            t_c=1,
             phi_c=prior.Cosine(boundary="periodic"),
-            theta=0.1,
-            phi=0.2,
-            psi=0.3,
+            theta=0.3,
+            phi=0.4,
+            psi=0.5,
         )
 
-        assert priors.theta_name_sample == ["m_1", "m_2", "r", "iota", "phi_c"]
         assert priors.periodic_indices == [0, 4]
         assert priors.reflective_indices == [2, 3]

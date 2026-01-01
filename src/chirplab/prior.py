@@ -1,7 +1,7 @@
 """Module for prior distributions."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 import numpy
@@ -111,7 +111,7 @@ class Cosine(Prior):
         self.x_min = x_min
         self.x_max = x_max
 
-    def transform(self, u: float) -> numpy.float64:
+    def transform(self, u: float) -> float:
         """
         Transform sample between 0 and 1 to prior space.
 
@@ -127,7 +127,7 @@ class Cosine(Prior):
         """
         sin_min = numpy.sin(self.x_min)
         sin_max = numpy.sin(self.x_max)
-        x: numpy.float64 = numpy.arcsin(sin_min + (sin_max - sin_min) * u)
+        x: float = numpy.arcsin(sin_min + (sin_max - sin_min) * u)
         return x
 
 
@@ -150,7 +150,7 @@ class Sine(Prior):
         self.x_min = x_min
         self.x_max = x_max
 
-    def transform(self, u: float) -> numpy.float64:
+    def transform(self, u: float) -> float:
         """
         Transform sample between 0 and 1 to prior space.
 
@@ -166,7 +166,7 @@ class Sine(Prior):
         """
         cos_min = numpy.cos(self.x_min)
         cos_max = numpy.cos(self.x_max)
-        x: numpy.float64 = numpy.arccos(cos_min + (cos_max - cos_min) * u)
+        x: float = numpy.arccos(cos_min + (cos_max - cos_min) * u)
         return x
 
 
@@ -183,6 +183,12 @@ class Priors:
     theta: Prior | float
     phi: Prior | float
     psi: Prior | float
+
+    theta_name_sample: list[str] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Initialise fields."""
+        self.theta_name_sample = [name for name, prior in self.__dict__.items() if isinstance(prior, Prior)]
 
     def transform(self, u: numpy.typing.NDArray[numpy.floating]) -> numpy.typing.NDArray[numpy.floating]:
         """
@@ -209,11 +215,6 @@ class Priors:
     def n(self) -> int:
         """Number of sampled parameters."""
         return sum(1 for prior in self.__dict__.values() if isinstance(prior, Prior))
-
-    @property
-    def theta_name_sample(self) -> list[str]:
-        """Names of the sampled parameters."""
-        return [name for name, prior in self.__dict__.items() if isinstance(prior, Prior)]
 
     @property
     def theta_fixed(self) -> dict[str, float]:
