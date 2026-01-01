@@ -1,4 +1,4 @@
-"""Module for likelihood calculations."""
+"""Module for likelihood calculations of gravitational-wave signals."""
 
 from typing import TYPE_CHECKING
 
