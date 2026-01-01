@@ -1,5 +1,6 @@
 """Module for prior distributions."""
 
+from dataclasses import dataclass
 from typing import Literal
 
 import numpy
@@ -49,38 +50,6 @@ class Prior:
         """
         msg = "Priors must implement this method."
         raise NotImplementedError(msg)
-
-
-class DeltaFunction(Prior):
-    """
-    Delta function prior.
-
-    Parameters
-    ----------
-    x_peak
-        Location of the delta function peak.
-    """
-
-    def __init__(self, x_peak: float) -> None:
-        boundary = None
-        super().__init__(boundary)
-        self.x_peak = x_peak
-
-    def transform(self, u: float) -> float:
-        """
-        Transform sample between 0 and 1 to prior space.
-
-        Parameters
-        ----------
-        u
-            Random sample between 0 and 1.
-
-        Returns
-        -------
-        x
-            Transformed sample in prior space.
-        """
-        return self.x_peak
 
 
 class Uniform(Prior):
@@ -199,18 +168,19 @@ class Sine(Prior):
         return x
 
 
-class Priors(list[Prior]):
-    """
-    Collection of prior distributions.
+@dataclass
+class Priors:
+    """Prior distributions on gravitational-wave signal parameters."""
 
-    Parameters
-    ----------
-    priors_list
-        List of prior distributions.
-    """
-
-    def __init__(self, priors_list: list[Prior]) -> None:
-        super().__init__(priors_list)
+    m_1: Prior | float
+    m_2: Prior | float
+    r: Prior | float
+    iota: Prior | float
+    t_c: Prior | float
+    phi_c: Prior | float
+    theta: Prior | float
+    phi: Prior | float
+    psi: Prior | float
 
     def transform(self, u: numpy.typing.NDArray[numpy.floating]) -> numpy.typing.NDArray[numpy.floating]:
         """
@@ -227,16 +197,45 @@ class Priors(list[Prior]):
             Transformed samples in prior space.
         """
         x = u.copy()
-        for i, prior in enumerate(self):
+        for i, name in enumerate(self.theta_name_sample):
+            prior = getattr(self, name)
+            assert isinstance(prior, Prior)
             x[i] = prior.transform(u[i])
         return x
 
     @property
+    def n(self) -> int:
+        """Number of sampled parameters."""
+        return sum(1 for prior in self.__dict__.values() if isinstance(prior, Prior))
+
+    @property
+    def theta_name_sample(self) -> list[str]:
+        """Names of the sampled parameters."""
+        return [name for name, prior in self.__dict__.items() if isinstance(prior, Prior)]
+
+    @property
+    def theta_fixed(self) -> dict[str, float]:
+        """Fixed parameters."""
+        return {name: prior for name, prior in self.__dict__.items() if isinstance(prior, int | float)}
+
+    @property
     def periodic_indices(self) -> None | list[int]:
-        """Indices of periodic parameters."""
-        return [i for i, prior in enumerate(self) if prior.is_periodic] or None
+        """Indices of the periodic parameters."""
+        indices: list[int] = []
+        for i, name in enumerate(self.theta_name_sample):
+            prior = getattr(self, name)
+            assert isinstance(prior, Prior)
+            if prior.is_periodic:
+                indices.append(i)
+        return indices or None
 
     @property
     def reflective_indices(self) -> None | list[int]:
-        """Indices of reflective parameters."""
-        return [i for i, prior in enumerate(self) if prior.is_reflective] or None
+        """Indices of the reflective parameters."""
+        indices: list[int] = []
+        for i, name in enumerate(self.theta_name_sample):
+            prior = getattr(self, name)
+            assert isinstance(prior, Prior)
+            if prior.is_reflective:
+                indices.append(i)
+        return indices or None

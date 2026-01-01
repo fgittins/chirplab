@@ -38,44 +38,6 @@ class TestPrior:
             p.transform(0.5)
 
 
-class TestDeltaFunction:
-    """Tests for the DeltaFunction prior."""
-
-    def test_initialisation(self) -> None:
-        """Test DeltaFunction initialisation."""
-        x_peak = 3.5
-        p = prior.DeltaFunction(x_peak)
-
-        assert p.x_peak == 3.5
-        assert p.is_periodic is False
-        assert p.is_reflective is False
-
-    def test_transform_returns_peak(self) -> None:
-        """Test that transform always returns the peak value."""
-        x_peak = 2.5
-        p = prior.DeltaFunction(x_peak)
-
-        assert p.transform(0) == x_peak
-        assert p.transform(0.5) == x_peak
-        assert p.transform(1) == x_peak
-
-    def test_transform_independent_of_input(self) -> None:
-        """Test that transform is independent of input value."""
-        x_peak = 7.3
-        p = prior.DeltaFunction(x_peak)
-        u = [0, 0.25, 0.5, 0.75, 1]
-        x = [p.transform(y) for y in u]
-
-        assert all(y == x_peak for y in x)
-
-    def test_negative_peak(self) -> None:
-        """Test DeltaFunction with negative peak value."""
-        x_peak = -5.2
-        p = prior.DeltaFunction(x_peak)
-
-        assert p.transform(0.5) == x_peak
-
-
 class TestUniform:
     """Tests for the Uniform prior."""
 
@@ -254,159 +216,61 @@ class TestSine:
 
 
 class TestPriors:
-    """Tests for the Priors collection class."""
+    """Tests for the Priors dataclass."""
 
-    def test_initialisation_empty(self) -> None:
-        """Test Priors initialisation with empty list."""
-        priors = prior.Priors([])
+    def test_counts_and_names(self) -> None:
+        """Ensure sampled parameters are tracked in field order."""
+        priors = prior.Priors(
+            m_1=prior.Uniform(0, 1),
+            m_2=prior.Uniform(1, 2),
+            r=prior.Uniform(10, 20),
+            iota=0.1,
+            t_c=0.2,
+            phi_c=prior.Sine(),
+            theta=0.3,
+            phi=0.4,
+            psi=0.5,
+        )
 
-        assert len(priors) == 0
+        assert priors.n == 4
+        assert priors.theta_name_sample == ["m_1", "m_2", "r", "phi_c"]
+        assert priors.theta_fixed == {"iota": 0.1, "t_c": 0.2, "theta": 0.3, "phi": 0.4, "psi": 0.5}
 
-    def test_initialisation_single(self) -> None:
-        """Test Priors initialisation with single prior."""
-        p = prior.Uniform(0, 1)
-        priors = prior.Priors([p])
-
-        assert len(priors) == 1
-        assert priors[0] == p
-
-    def test_initialisation_multiple(self) -> None:
-        """Test Priors initialisation with multiple priors."""
-        priors_list = [prior.Uniform(0, 1), prior.DeltaFunction(5), prior.Cosine()]
-        priors = prior.Priors(priors_list)
-
-        assert len(priors_list) == 3
-        for i, p in enumerate(priors_list):
-            assert priors[i] == p
-
-    def test_transform_single_prior(self) -> None:
-        """Test transform with single prior."""
-        p = prior.Uniform(0, 10)
-        priors = prior.Priors([p])
-        u = numpy.array([0.5])
-        x = priors.transform(u)
-
-        assert x[0] == 5
-
-    def test_transform_multiple_priors(self) -> None:
-        """Test transform with multiple priors."""
-        priors_list = [prior.Uniform(0, 2), prior.Uniform(0, 10), prior.DeltaFunction(7)]
-        priors = prior.Priors(priors_list)
-        u = numpy.array([0.5, 0.3, 0.999])
-        x = priors.transform(u)
-
-        assert x[0] == 1
-        assert x[1] == 3
-        assert x[2] == 7
-
-    def test_transform_output_shape(self) -> None:
-        """Test that transform output has correct shape."""
-        priors_list: list[prior.Prior] = [prior.Uniform(0, 1), prior.Uniform(0, 1), prior.Uniform(0, 1)]
-        priors = prior.Priors(priors_list)
-        u = numpy.array([0.1, 0.2, 0.3])
+    def test_transform_applies_priors(self) -> None:
+        """Transform should map unit samples through each Prior in order."""
+        priors = prior.Priors(
+            m_1=prior.Uniform(0, 10),
+            m_2=prior.Uniform(5, 15),
+            r=prior.Uniform(100, 200),
+            iota=0.1,
+            t_c=1,
+            phi_c=2.0,
+            theta=0.3,
+            phi=0.4,
+            psi=0.5,
+        )
+        u = numpy.array([0, 0.5, 1])
+        u_copy = u.copy()
         x = priors.transform(u)
 
         assert x.shape == u.shape
-
-    def test_transform_preserves_input_shape(self) -> None:
-        """Test that transform preserves input array shape."""
-        priors_list: list[prior.Prior] = [prior.Uniform(0, 1), prior.Uniform(0, 1)]
-        priors = prior.Priors(priors_list)
-        u = numpy.array([0.2, 0.8])
-        x = priors.transform(u)
-
-        assert x.dtype == u.dtype
-
-    def test_transform_does_not_modify_input(self) -> None:
-        """Test that transform does not modify input array."""
-        priors_list: list[prior.Prior] = [prior.Uniform(0, 1), prior.Uniform(0, 1)]
-        priors = prior.Priors(priors_list)
-        u = numpy.array([0.3, 0.7])
-        u_copy = u.copy()
-        priors.transform(u)
-
         assert numpy.array_equal(u, u_copy)
+        assert numpy.allclose(x, numpy.array([0, 10, 200]))
 
-    def test_periodic_indices_none(self) -> None:
-        """Test periodic_indices property when no periodic priors."""
-        priors_list = [prior.Uniform(0, 1), prior.DeltaFunction(5)]
-        priors = prior.Priors(priors_list)
+    def test_boundary_indices(self) -> None:
+        """Check periodic and reflective index bookkeeping matches Priors order."""
+        priors = prior.Priors(
+            m_1=prior.Uniform(0, 1, boundary="periodic"),
+            m_2=prior.Uniform(0, 1),
+            r=prior.Uniform(0, 1, boundary="reflective"),
+            iota=prior.Sine(boundary="reflective"),
+            t_c=0.0,
+            phi_c=prior.Cosine(boundary="periodic"),
+            theta=0.1,
+            phi=0.2,
+            psi=0.3,
+        )
 
-        assert priors.periodic_indices is None
-
-    def test_periodic_indices_single(self) -> None:
-        """Test periodic_indices property with single periodic prior."""
-        priors_list = [
-            prior.Uniform(0, 1),
-            prior.Uniform(0, 2, boundary="periodic"),
-            prior.DeltaFunction(5),
-        ]
-        priors = prior.Priors(priors_list)
-
-        assert priors.periodic_indices == [1]
-
-    def test_periodic_indices_multiple(self) -> None:
-        """Test periodic_indices property with multiple periodic priors."""
-        priors_list: list[prior.Prior] = [
-            prior.Uniform(0, 1, boundary="periodic"),
-            prior.Uniform(0, 2),
-            prior.Uniform(0, 3, boundary="periodic"),
-        ]
-        priors = prior.Priors(priors_list)
-
-        assert priors.periodic_indices == [0, 2]
-
-    def test_reflective_indices_none(self) -> None:
-        """Test reflective_indices property when no reflective priors."""
-        priors_list = [prior.Uniform(0, 1), prior.DeltaFunction(5)]
-        priors = prior.Priors(priors_list)
-
-        assert priors.reflective_indices is None
-
-    def test_reflective_indices_single(self) -> None:
-        """Test reflective_indices property with single reflective prior."""
-        priors_list = [prior.Uniform(0, 1), prior.Uniform(0, 2, boundary="reflective"), prior.DeltaFunction(5)]
-        priors = prior.Priors(priors_list)
-
-        assert priors.reflective_indices == [1]
-
-    def test_reflective_indices_multiple(self) -> None:
-        """Test reflective_indices property with multiple reflective priors."""
-        priors_list = [
-            prior.Uniform(0, 1, boundary="reflective"),
-            prior.Uniform(0, 2),
-            prior.Sine(boundary="reflective"),
-        ]
-        priors = prior.Priors(priors_list)
-
-        assert priors.reflective_indices == [0, 2]
-
-    def test_mixed_boundary_conditions(self) -> None:
-        """Test Priors with mixed boundary conditions."""
-        priors_list: list[prior.Prior] = [
-            prior.Uniform(0, 1, boundary="periodic"),
-            prior.Uniform(0, 2, boundary="reflective"),
-            prior.Uniform(0, 3),
-        ]
-        priors = prior.Priors(priors_list)
-
-        assert priors.periodic_indices == [0]
-        assert priors.reflective_indices == [1]
-
-    def test_list_behavior(self) -> None:
-        """Test that Priors behaves as a list."""
-        p_1 = prior.Uniform(0, 1)
-        p_2 = prior.DeltaFunction(5)
-        priors = prior.Priors([p_1])
-        priors.append(p_2)
-
-        assert len(priors) == 2
-        assert priors[1] == p_2
-
-    def test_iteration(self) -> None:
-        """Test that Priors can be iterated over."""
-        priors_list = [prior.Uniform(0, 1), prior.DeltaFunction(5), prior.Cosine()]
-        priors = prior.Priors(priors_list)
-
-        for i, p in enumerate(priors):
-            assert p == priors_list[i]
+        assert priors.theta_name_sample == ["m_1", "m_2", "r", "iota", "phi_c"]
+        assert priors.periodic_indices == [0, 4]
+        assert priors.reflective_indices == [2, 3]
