@@ -3,7 +3,7 @@
 import numpy
 import pytest
 
-from chirplab import constants, prior
+from chirplab import constants, interferometer, prior
 
 
 class TestUniform:
@@ -48,6 +48,16 @@ class TestUniform:
         x = numpy.array([p.transform(y) for y in u])
 
         assert all(x == x_min + (x_max - x_min) * u)
+
+    def test_sample_uses_rng(self) -> None:
+        """Sampling should draw from the provided RNG."""
+        rng_1 = numpy.random.default_rng(1234)
+        p = prior.Uniform(2, 5)
+        x_1 = p.sample(rng_1)
+        rng_2 = numpy.random.default_rng(1234)
+        x_2 = p.transform(rng_2.uniform(0, 1))
+
+        assert x_1 == x_2
 
     def test_negative_range(self) -> None:
         """Test Uniform prior with negative range."""
@@ -241,3 +251,38 @@ class TestPriors:
 
         assert priors.periodic_indices == [0, 4]
         assert priors.reflective_indices == [2, 3]
+
+    def test_sample_returns_signal_parameters(self, rng_default: numpy.random.Generator) -> None:
+        """Sampling should produce a SignalParameters instance with set random number generation."""
+        priors = prior.Priors(
+            m_1=prior.Uniform(0, 1),
+            m_2=2,
+            r=prior.Uniform(10, 20),
+            iota=prior.Sine(),
+            t_c=1.5,
+            phi_c=prior.Cosine(),
+            theta=0.3,
+            phi=0.4,
+            psi=0.5,
+        )
+        rng_1 = numpy.random.default_rng(2024)
+        theta_1 = priors.sample(rng_1)
+        rng_2 = numpy.random.default_rng(2024)
+        m_1 = priors.m_1.transform(rng_2.uniform(0, 1)) if isinstance(priors.m_1, prior.Prior) else priors.m_1
+        r = priors.r.transform(rng_2.uniform(0, 1)) if isinstance(priors.r, prior.Prior) else priors.r
+        iota = priors.iota.transform(rng_2.uniform(0, 1)) if isinstance(priors.iota, prior.Prior) else priors.iota
+        phi_c = priors.phi_c.transform(rng_2.uniform(0, 1)) if isinstance(priors.phi_c, prior.Prior) else priors.phi_c
+        theta_2 = interferometer.SignalParameters(
+            m_1=m_1,
+            m_2=2,
+            r=r,
+            iota=iota,
+            t_c=1.5,
+            phi_c=phi_c,
+            theta=0.3,
+            phi=0.4,
+            psi=0.5,
+        )
+
+        assert isinstance(theta_1, interferometer.SignalParameters)
+        assert theta_1 == theta_2

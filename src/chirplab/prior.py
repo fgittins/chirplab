@@ -2,18 +2,17 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import TYPE_CHECKING, Literal, override
 
 import numpy
 
-from . import constants
+from . import constants, interferometer
 
 type BOUNDARY_TYPES = None | Literal["periodic", "reflective"]
 
 # TODO: add uniform in comoving volume prior
 # TODO: add constraint prior
 # TODO: add Gaussian prior
-# TODO: write sample method
 
 
 class Prior(ABC):
@@ -52,6 +51,23 @@ class Prior(ABC):
             Transformed sample in prior space.
         """
         pass
+
+    def sample(self, rng: numpy.random.Generator) -> float:
+        """
+        Sample from the prior distribution.
+
+        Parameters
+        ----------
+        rng
+            Random number generator.
+
+        Returns
+        -------
+        x
+            Sample drawn from the prior distribution.
+        """
+        u = rng.uniform(0, 1)
+        return self.transform(u)
 
 
 class Uniform(Prior):
@@ -172,7 +188,7 @@ class Sine(Prior):
 
 @dataclass
 class Priors:
-    """Prior distributions on gravitational-wave signal parameters."""
+    """Joint prior distribution on the gravitational-wave signal parameters."""
 
     m_1: Prior | float
     m_2: Prior | float
@@ -210,6 +226,28 @@ class Priors:
             assert isinstance(prior, Prior)
             x[i] = prior.transform(u[i])
         return x
+
+    def sample(self, rng: numpy.random.Generator) -> interferometer.SignalParameters:
+        """
+        Sample from the joint prior distribution.
+
+        Parameters
+        ----------
+        rng
+            Random number generator.
+
+        Returns
+        -------
+        theta
+            Sampled signal parameters.
+        """
+        theta_dict: dict[str, float] = {}
+        for name, prior in self.__dict__.items():
+            if isinstance(prior, Prior):
+                theta_dict[name] = prior.sample(rng)
+            elif isinstance(prior, int | float):
+                theta_dict[name] = prior
+        return interferometer.SignalParameters(**theta_dict)
 
     @property
     def n(self) -> int:
