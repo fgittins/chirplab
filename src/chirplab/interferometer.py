@@ -120,7 +120,7 @@ class Grid:
         m_tilde
             Frequency-domain Gaussian noise per unit amplitude spectral density (Hz^-1/2).
         """
-        x = rng.standard_normal((2, self.m + 1))
+        x = rng.standard_normal((2, self.m + 1), dtype=numpy.float64)
 
         sigma = (1 / 4 * self.t_d) ** (1 / 2)
 
@@ -162,7 +162,7 @@ class Interferometer:
         self.in_bounds_mask = (f_min_sens <= grid.f) & (grid.f <= f_max_sens)
         self.f = grid.f[self.in_bounds_mask]
 
-        f, amplitude_spectral_density = numpy.loadtxt(amplitude_spectral_density_file, unpack=True)
+        f, amplitude_spectral_density = numpy.loadtxt(amplitude_spectral_density_file, numpy.float64, unpack=True)
         self.s_n: numpy.typing.NDArray[numpy.float64] = numpy.interp(self.f, f, amplitude_spectral_density**2)
 
         self.set_data(rng, is_zero_noise)
