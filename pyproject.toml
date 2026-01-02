@@ -65,8 +65,6 @@ lint.pydocstyle.convention = "numpy"
 "tests/*" = [
     # flake8-simplify
     "SIM300",
-    # Pylint Refactor
-    "PLR2004",
 ]
 
 [tool.mypy]
