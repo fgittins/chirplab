@@ -112,7 +112,7 @@ class Grid:
         Parameters
         ----------
         rng
-            Random number generator.
+            Random number generator for the noise generation.
 
         Returns
         -------
@@ -175,7 +175,7 @@ class Interferometer:
         Parameters
         ----------
         rng
-            Random number generator.
+            Random number generator for the noise realisation.
         is_zero_noise
             Whether to use zero noise realisation.
         """

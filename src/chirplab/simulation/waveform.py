@@ -154,8 +154,11 @@ class NewtonianWaveformModel(WaveformModel):
             + 3 / 4 * (constants.G * theta.m_chirp / constants.C**3 * 8 * constants.PI * f_valid) ** (-5 / 3)
         )
 
-        h_tilde_plus[valid_mask] = a * numpy.exp(1j * psi) * (1 + numpy.cos(theta.iota) ** 2) / 2
-        h_tilde_cross[valid_mask] = 1j * a * numpy.exp(1j * psi) * numpy.cos(theta.iota)
+        b = a * numpy.exp(1j * psi)
+        cos_iota = numpy.cos(theta.iota)
+
+        h_tilde_plus[valid_mask] = b * (1 + cos_iota**2) / 2
+        h_tilde_cross[valid_mask] = 1j * b * cos_iota
 
         return h_tilde_plus, h_tilde_cross
 

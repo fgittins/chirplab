@@ -27,29 +27,29 @@ class TestUniform:
 
         assert p.is_periodic is True
 
-    def test_transform_boundaries(self) -> None:
-        """Test that transform returns correct boundary values."""
+    def test_calculate_ppf_boundaries(self) -> None:
+        """Test that calculate_ppf returns correct boundary values."""
         x_min, x_max = 2, 5
         p = prior.Uniform(x_min, x_max)
 
-        assert p.transform(0) == x_min
-        assert p.transform(1) == x_max
+        assert p.calculate_ppf(0) == x_min
+        assert p.calculate_ppf(1) == x_max
 
-    def test_transform_midpoint(self) -> None:
-        """Test that transform returns correct midpoint value."""
+    def test_calculate_ppf_midpoint(self) -> None:
+        """Test that calculate_ppf returns correct midpoint value."""
         x_min, x_max = 0, 10
         p = prior.Uniform(x_min, x_max)
 
-        assert p.transform(0.5) == (x_min + x_max) / 2
+        assert p.calculate_ppf(0.5) == (x_min + x_max) / 2
 
-    def test_transform_linear(self) -> None:
-        """Test that transform is linear in u."""
+    def test_calculate_ppf_linear(self) -> None:
+        """Test that calculate_ppf is linear."""
         x_min, x_max = -5, 15
         p = prior.Uniform(x_min, x_max)
-        u = numpy.array([0, 0.25, 0.5, 0.75, 1])
-        x = numpy.array([p.transform(y) for y in u])
+        q = numpy.array([0, 0.25, 0.5, 0.75, 1])
+        x = numpy.array([p.calculate_ppf(y) for y in q])
 
-        assert all(x == x_min + (x_max - x_min) * u)
+        assert all(x == x_min + (x_max - x_min) * q)
 
     def test_sample_no_rng(self) -> None:
         """Test that sampling without a provided random number generator gives different results."""
@@ -65,7 +65,8 @@ class TestUniform:
         p = prior.Uniform(2, 5)
         x_1 = p.sample(rng_1)
         rng_2 = numpy.random.default_rng(1234)
-        x_2 = p.transform(rng_2.uniform(0, 1))
+        q = rng_2.uniform(0, 1)
+        x_2 = p.calculate_ppf(q)
 
         assert x_1 == x_2
 
@@ -74,17 +75,17 @@ class TestUniform:
         x_min, x_max = -10, -2
         p = prior.Uniform(x_min, x_max)
 
-        assert p.transform(0) == x_min
-        assert p.transform(1) == x_max
+        assert p.calculate_ppf(0) == x_min
+        assert p.calculate_ppf(1) == x_max
 
     def test_range_crossing_zero(self) -> None:
         """Test Uniform prior with range crossing zero."""
         x_min, x_max = -3, 7
         p = prior.Uniform(x_min, x_max)
 
-        assert p.transform(0) == x_min
-        assert p.transform(1) == x_max
-        assert p.transform(0.3) == x_min + (x_max - x_min) * 0.3
+        assert p.calculate_ppf(0) == x_min
+        assert p.calculate_ppf(1) == x_max
+        assert p.calculate_ppf(0.3) == x_min + (x_max - x_min) * 0.3
 
 
 class TestCosine:
@@ -113,34 +114,34 @@ class TestCosine:
 
         assert p.is_reflective is True
 
-    def test_transform_boundaries(self) -> None:
-        """Test that transform returns correct boundary values."""
+    def test_calculate_ppf_boundaries(self) -> None:
+        """Test that calculate_ppf returns correct boundary values."""
         x_min, x_max = -constants.PI / 4, constants.PI / 4
         p = prior.Cosine(x_min, x_max)
 
-        assert numpy.isclose(p.transform(0), x_min)
-        assert numpy.isclose(p.transform(1), x_max)
+        assert numpy.isclose(p.calculate_ppf(0), x_min)
+        assert numpy.isclose(p.calculate_ppf(1), x_max)
 
-    def test_transform_monotonic(self) -> None:
-        """Test that transform is monotonically increasing."""
+    def test_calculate_ppf_monotonic(self) -> None:
+        """Test that calculate_ppf is monotonically increasing."""
         p = prior.Cosine()
-        u = numpy.linspace(0, 1, 100)
-        x = [p.transform(y) for y in u]
+        q = numpy.linspace(0, 1, 100)
+        x = [p.calculate_ppf(y) for y in q]
         diffs = numpy.diff(x)
 
         assert numpy.all(diffs >= 0)
 
-    def test_transform_returns_float64(self) -> None:
-        """Test that transform returns numpy.float64."""
+    def test_calculate_ppf_returns_float64(self) -> None:
+        """Test that calculate_ppf returns numpy.float64."""
         p = prior.Cosine()
-        x = p.transform(0.5)
+        x = p.calculate_ppf(0.5)
 
         assert isinstance(x, numpy.float64)
 
-    def test_transform_symmetric_range(self) -> None:
+    def test_calculate_ppf_symmetric_range(self) -> None:
         """Test Cosine prior with symmetric range around zero."""
         p = prior.Cosine(-constants.PI / 3, constants.PI / 3)
-        x = p.transform(0.5)
+        x = p.calculate_ppf(0.5)
 
         assert numpy.isclose(x, 0)
 
@@ -171,34 +172,34 @@ class TestSine:
 
         assert p.is_periodic is True
 
-    def test_transform_boundaries(self) -> None:
-        """Test that transform returns correct boundary values."""
+    def test_calculate_ppf_boundaries(self) -> None:
+        """Test that calculate_ppf returns correct boundary values."""
         x_min, x_max = constants.PI / 4, 3 * constants.PI / 4
         p = prior.Sine(x_min, x_max)
 
-        assert p.transform(0) == x_min
-        assert p.transform(1) == x_max
+        assert p.calculate_ppf(0) == x_min
+        assert p.calculate_ppf(1) == x_max
 
-    def test_transform_monotonic(self) -> None:
-        """Test that transform is monotonically increasing."""
+    def test_calculate_ppf_monotonic(self) -> None:
+        """Test that calculate_ppf is monotonically increasing."""
         p = prior.Sine()
-        u = numpy.linspace(0, 1, 100)
-        x = [p.transform(y) for y in u]
+        q = numpy.linspace(0, 1, 100)
+        x = [p.calculate_ppf(y) for y in q]
         diffs = numpy.diff(x)
 
         assert numpy.all(diffs >= 0)
 
-    def test_transform_returns_float64(self) -> None:
-        """Test that transform returns numpy.float64."""
+    def test_calculate_ppf_returns_float64(self) -> None:
+        """Test that calculate_ppf returns numpy.float64."""
         p = prior.Sine()
-        result = p.transform(0.5)
+        result = p.calculate_ppf(0.5)
 
         assert isinstance(result, numpy.float64)
 
-    def test_transform_default_range(self) -> None:
+    def test_calculate_ppf_default_range(self) -> None:
         """Test Sine prior with default range [0, pi]."""
         p = prior.Sine()
-        x = p.transform(0.5)
+        x = p.calculate_ppf(0.5)
 
         assert x == constants.PI / 2
 
@@ -224,8 +225,8 @@ class TestPriors:
         assert priors.theta_name_sample == ["m_1", "m_2", "r", "phi_c"]
         assert priors.theta_fixed == {"iota": 0.1, "t_c": 0.2, "theta": 0.3, "phi": 0.4, "psi": 0.5}
 
-    def test_transform_applies_priors(self) -> None:
-        """Test that transform maps unit samples through each Prior in order."""
+    def test_calculate_ppf_applies_priors(self) -> None:
+        """Test that calculate_ppf maps unit samples through each Prior in order."""
         priors = prior.Priors(
             m_1=prior.Uniform(0, 10),
             m_2=prior.Uniform(5, 15),
@@ -237,12 +238,12 @@ class TestPriors:
             phi=0.4,
             psi=0.5,
         )
-        u = numpy.array([0, 0.5, 1])
-        u_copy = u.copy()
-        x = priors.transform(u)
+        q = numpy.array([0, 0.5, 1])
+        q_copy = q.copy()
+        x = priors.calculate_ppf(q)
 
-        assert x.shape == u.shape
-        assert numpy.array_equal(u, u_copy)
+        assert x.shape == q.shape
+        assert numpy.array_equal(q, q_copy)
         assert numpy.allclose(x, numpy.array([0, 10, 200]))
 
     def test_boundary_indices(self) -> None:
@@ -278,10 +279,12 @@ class TestPriors:
         rng_1 = numpy.random.default_rng(2024)
         theta_1 = priors.sample(rng_1)
         rng_2 = numpy.random.default_rng(2024)
-        m_1 = priors.m_1.transform(rng_2.uniform(0, 1)) if isinstance(priors.m_1, prior.Prior) else priors.m_1
-        r = priors.r.transform(rng_2.uniform(0, 1)) if isinstance(priors.r, prior.Prior) else priors.r
-        iota = priors.iota.transform(rng_2.uniform(0, 1)) if isinstance(priors.iota, prior.Prior) else priors.iota
-        phi_c = priors.phi_c.transform(rng_2.uniform(0, 1)) if isinstance(priors.phi_c, prior.Prior) else priors.phi_c
+        m_1 = priors.m_1.calculate_ppf(rng_2.uniform(0, 1)) if isinstance(priors.m_1, prior.Prior) else priors.m_1
+        r = priors.r.calculate_ppf(rng_2.uniform(0, 1)) if isinstance(priors.r, prior.Prior) else priors.r
+        iota = priors.iota.calculate_ppf(rng_2.uniform(0, 1)) if isinstance(priors.iota, prior.Prior) else priors.iota
+        phi_c = (
+            priors.phi_c.calculate_ppf(rng_2.uniform(0, 1)) if isinstance(priors.phi_c, prior.Prior) else priors.phi_c
+        )
         theta_2 = interferometer.SignalParameters(
             m_1=m_1,
             m_2=2,

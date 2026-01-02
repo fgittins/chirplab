@@ -1,7 +1,6 @@
 """Module for prior distributions."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal, override
 
 import numpy
@@ -26,7 +25,6 @@ class Prior(ABC):
         Boundary condition for the prior.
     """
 
-    @abstractmethod
     def __init__(self, boundary: BOUNDARY_TYPES = None) -> None:
         is_periodic = is_reflective = False
         if boundary == "periodic":
@@ -37,19 +35,19 @@ class Prior(ABC):
         self.is_reflective = is_reflective
 
     @abstractmethod
-    def transform(self, u: float) -> float:
+    def calculate_ppf(self, q: float) -> float:
         """
-        Transform sample between 0 and 1 to prior space.
+        Calculate the percent-point function (inverse cumulative distribution function).
 
         Parameters
         ----------
-        u
-            Random sample between 0 and 1.
+        q
+            Lower-tail probability.
 
         Returns
         -------
         x
-            Transformed sample in prior space.
+            Quantile corresponding to the given probability.
         """
         pass
 
@@ -60,7 +58,7 @@ class Prior(ABC):
         Parameters
         ----------
         rng
-            Random number generator.
+            Random number generator for the sampling.
 
         Returns
         -------
@@ -71,7 +69,7 @@ class Prior(ABC):
             rng = numpy.random.default_rng()
 
         u = rng.uniform(0, 1)
-        return self.transform(u)
+        return self.calculate_ppf(u)
 
 
 class Uniform(Prior):
@@ -93,21 +91,21 @@ class Uniform(Prior):
         self.x_min = x_min
         self.x_max = x_max
 
-    def transform(self, u: float) -> float:
+    def calculate_ppf(self, q: float) -> float:
         """
-        Transform sample between 0 and 1 to prior space.
+        Calculate the percent-point function (inverse cumulative distribution function).
 
         Parameters
         ----------
-        u
-            Random sample between 0 and 1.
+        q
+            Lower-tail probability.
 
         Returns
         -------
         x
-            Transformed sample in prior space.
+            Quantile corresponding to the given probability.
         """
-        return self.x_min + (self.x_max - self.x_min) * u
+        return self.x_min + (self.x_max - self.x_min) * q
 
 
 class Cosine(Prior):
@@ -131,23 +129,23 @@ class Cosine(Prior):
         self.x_min = x_min
         self.x_max = x_max
 
-    def transform(self, u: float) -> numpy.float64:
+    def calculate_ppf(self, q: float) -> numpy.float64:
         """
-        Transform sample between 0 and 1 to prior space.
+        Calculate the percent-point function (inverse cumulative distribution function).
 
         Parameters
         ----------
-        u
-            Random sample between 0 and 1.
+        q
+            Lower-tail probability.
 
         Returns
         -------
         x
-            Transformed sample in prior space.
+            Quantile corresponding to the given probability.
         """
-        sin_min = numpy.sin(self.x_min)
-        sin_max = numpy.sin(self.x_max)
-        x: numpy.float64 = numpy.arcsin(sin_min + (sin_max - sin_min) * u)
+        sin_x_min = numpy.sin(self.x_min)
+        sin_x_max = numpy.sin(self.x_max)
+        x: numpy.float64 = numpy.arcsin(sin_x_min + (sin_x_max - sin_x_min) * q)
         return x
 
 
@@ -170,65 +168,95 @@ class Sine(Prior):
         self.x_min = x_min
         self.x_max = x_max
 
-    def transform(self, u: float) -> numpy.float64:
+    def calculate_ppf(self, q: float) -> numpy.float64:
         """
-        Transform sample between 0 and 1 to prior space.
+        Calculate the percent-point function (inverse cumulative distribution function).
 
         Parameters
         ----------
-        u
-            Random sample between 0 and 1.
+        q
+            Lower-tail probability.
 
         Returns
         -------
         x
-            Transformed sample in prior space.
+            Quantile corresponding to the given probability.
         """
-        cos_min = numpy.cos(self.x_min)
-        cos_max = numpy.cos(self.x_max)
-        x: numpy.float64 = numpy.arccos(cos_min + (cos_max - cos_min) * u)
+        cos_x_min = numpy.cos(self.x_min)
+        cos_x_max = numpy.cos(self.x_max)
+        x: numpy.float64 = numpy.arccos(cos_x_min + (cos_x_max - cos_x_min) * q)
         return x
 
 
-@dataclass
 class Priors:
-    """Joint prior distribution on the gravitational-wave signal parameters."""
+    """
+    Joint prior distribution on the gravitational-wave signal parameters.
 
-    m_1: Prior | float
-    m_2: Prior | float
-    r: Prior | float
-    iota: Prior | float
-    t_c: Prior | float
-    phi_c: Prior | float
-    theta: Prior | float
-    phi: Prior | float
-    psi: Prior | float
+    Parameters
+    ----------
+    m_1
+        Prior on the mass of the first component in the binary (kg).
+    m_2
+        Prior on the mass of the second component in the binary (kg).
+    r
+        Prior on the luminosity distance to the binary (m).
+    iota
+        Prior on the inclination angle of the binary (rad).
+    t_c
+        Prior on the coalescence time (s).
+    phi_c
+        Prior on the coalescence phase (rad).
+    theta
+        Prior on the polar angle of the binary in the detector frame (rad).
+    phi
+        Prior on the azimuthal angle of the binary in the detector frame (rad).
+    psi
+        Prior on the polarisation angle of the binary in the detector frame (rad).
+    """
 
-    theta_name_sample: list[str] = field(init=False)
+    def __init__(
+        self,
+        m_1: Prior | float,
+        m_2: Prior | float,
+        r: Prior | float,
+        iota: Prior | float,
+        t_c: Prior | float,
+        phi_c: Prior | float,
+        theta: Prior | float,
+        phi: Prior | float,
+        psi: Prior | float,
+    ) -> None:
+        self.m_1 = m_1
+        self.m_2 = m_2
+        self.r = r
+        self.iota = iota
+        self.t_c = t_c
+        self.phi_c = phi_c
+        self.theta = theta
+        self.phi = phi
+        self.psi = psi
 
-    def __post_init__(self) -> None:
-        """Initialise fields."""
         self.theta_name_sample = [name for name, prior in self.__dict__.items() if isinstance(prior, Prior)]
 
-    def transform(self, u: numpy.typing.NDArray[numpy.floating]) -> numpy.typing.NDArray[numpy.floating]:
+    def calculate_ppf(self, q: numpy.typing.NDArray[numpy.floating]) -> numpy.typing.NDArray[numpy.floating]:
         """
-        Transform unit hypercube samples to prior space.
+        Calculate the percent-point function (inverse cumulative distribution function) of each prior distribution.
 
         Parameters
         ----------
-        u
-            Random samples from the unit hypercube.
+        q
+            Lower-tail probabilities.
 
         Returns
         -------
         x
-            Transformed samples in prior space.
+            Quantiles corresponding to the given probabilities.
         """
-        x = u.copy()
+        x = q.copy()
         for i, name in enumerate(self.theta_name_sample):
             prior = getattr(self, name)
             assert isinstance(prior, Prior)
-            x[i] = prior.transform(u[i])
+            x[i] = prior.calculate_ppf(q[i])
         return x
 
     def sample(self, rng: None | numpy.random.Generator = None) -> interferometer.SignalParameters:
@@ -238,7 +266,7 @@ class Priors:
         Parameters
         ----------
         rng
-            Random number generator.
+            Random number generator for the sampling.
 
         Returns
         -------
