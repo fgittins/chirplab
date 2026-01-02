@@ -159,13 +159,12 @@ class TestInterferometer:
         self, grid_default: interferometer.Grid, amplitude_spectral_density_file_default: Path
     ) -> None:
         """Test that frequency band restriction works correctly."""
-        f_min_sens = 50
-        f_max_sens = 500
-        band = (f_min_sens, f_max_sens)
-        ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, band=band)
+        f_min = 50
+        f_max = 500
+        ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, f_min, f_max)
 
-        assert numpy.all(f_min_sens <= ifo.f)
-        assert numpy.all(ifo.f <= f_max_sens)
+        assert numpy.all(f_min <= ifo.f)
+        assert numpy.all(ifo.f <= f_max)
 
     def test_noise_generation_zero_noise(
         self, grid_default: interferometer.Grid, amplitude_spectral_density_file_default: Path

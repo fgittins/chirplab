@@ -138,8 +138,10 @@ class Interferometer:
         Grid for signal sampling.
     amplitude_spectral_density_file
         File containing the amplitude spectral density data.
-    band
-        Frequency band over which the interferometer is sensitive (Hz).
+    f_min
+        Minimum sensitivity frequency (Hz).
+    f_max
+        Maximum sensitivity frequency (Hz).
     rng
         Random number generator for the noise realisation.
     is_zero_noise
@@ -150,14 +152,14 @@ class Interferometer:
         self,
         grid: Grid,
         amplitude_spectral_density_file: Path,
-        band: tuple[float, float] = (0, constants.INF),
+        f_min: float = 0,
+        f_max: float = constants.INF,
         rng: None | numpy.random.Generator = None,
         is_zero_noise: bool = False,
     ) -> None:
         self.grid = grid
-        f_min_sens, f_max_sens = band
 
-        self.in_bounds_mask = (f_min_sens <= grid.f) & (grid.f <= f_max_sens)
+        self.in_bounds_mask = (f_min <= grid.f) & (grid.f <= f_max)
         self.f = grid.f[self.in_bounds_mask]
 
         f, amplitude_spectral_density = numpy.loadtxt(amplitude_spectral_density_file, numpy.float64, unpack=True)
@@ -344,8 +346,7 @@ class LIGO(Interferometer):
 
     def __init__(self, grid: Grid, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
         pwd = Path(__file__).parent
-        band = (20, 2048)
-        super().__init__(grid, pwd / "data/aligo_O4high.txt", band, rng, is_zero_noise)
+        super().__init__(grid, pwd / "data/aligo_O4high.txt", 20, 2048, rng, is_zero_noise)
 
 
 def calculate_inner_product(
