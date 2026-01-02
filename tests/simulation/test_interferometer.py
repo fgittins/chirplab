@@ -1,4 +1,4 @@
-"""Unit tests for the interferometer module."""
+"""Tests for the interferometer module."""
 
 from dataclasses import replace
 from pathlib import Path
@@ -7,10 +7,11 @@ from typing import TYPE_CHECKING
 import numpy
 import pytest
 
-from chirplab import constants, interferometer
+from chirplab import constants
+from chirplab.simulation import interferometer
 
 if TYPE_CHECKING:
-    from chirplab import waveform
+    from chirplab.simulation import waveform
 
 RTOL = 0
 ATOL = 1e-25
@@ -25,7 +26,7 @@ def s_n_default() -> numpy.typing.NDArray[numpy.float64]:
 @pytest.fixture(scope="class")
 def amplitude_spectral_density_file_default() -> Path:
     """Return path to default amplitude spectral density file for testing."""
-    return Path(__file__).parent.parent / "src/chirplab/data/aligo_O4high.txt"
+    return Path(__file__).parent.parent.parent / "src/chirplab/simulation/data/aligo_O4high.txt"
 
 
 @pytest.fixture(scope="class")

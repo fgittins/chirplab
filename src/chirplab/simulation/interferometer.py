@@ -5,7 +5,8 @@ from pathlib import Path
 
 import numpy
 
-from . import constants, waveform
+from chirplab import constants
+from chirplab.simulation import waveform
 
 # TODO: add multiple interferometers
 # TODO: include right ascension and declination for sky location

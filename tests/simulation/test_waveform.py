@@ -1,11 +1,12 @@
-"""Unit tests for the waveform module."""
+"""Tests for the waveform module."""
 
 from dataclasses import replace
 
 import numpy
 import pytest
 
-from chirplab import constants, waveform
+from chirplab import constants
+from chirplab.simulation import waveform
 
 RTOL = 0
 ATOL = 1e-24

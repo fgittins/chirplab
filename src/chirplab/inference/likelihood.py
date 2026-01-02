@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy.typing
 
-    from . import interferometer, waveform
+    from chirplab.simulation import interferometer, waveform
 
 
 class Likelihood:

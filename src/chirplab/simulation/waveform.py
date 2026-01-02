@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import numpy
 
-from . import constants
+from chirplab import constants
 
 
 @dataclass

@@ -1,4 +1,4 @@
-"""Unit tests for the likelihood module."""
+"""Tests for the likelihood module."""
 
 from dataclasses import replace
 from typing import TYPE_CHECKING
@@ -6,10 +6,12 @@ from typing import TYPE_CHECKING
 import numpy
 import pytest
 
-from chirplab import constants, interferometer, likelihood
+from chirplab import constants
+from chirplab.inference import likelihood
+from chirplab.simulation import interferometer
 
 if TYPE_CHECKING:
-    from chirplab import waveform
+    from chirplab.simulation import waveform
 
 
 @pytest.fixture(scope="class")

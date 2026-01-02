@@ -1,9 +1,11 @@
-"""Unit tests for the prior module."""
+"""Tests for the prior module."""
 
 import numpy
 import pytest
 
-from chirplab import constants, interferometer, prior
+from chirplab import constants
+from chirplab.inference import prior
+from chirplab.simulation import interferometer
 
 
 class TestUniform:
@@ -49,8 +51,16 @@ class TestUniform:
 
         assert all(x == x_min + (x_max - x_min) * u)
 
+    def test_sample_no_rng(self) -> None:
+        """Test that sampling without a provided random number generator gives different results."""
+        p = prior.Uniform(2, 5)
+        x_1 = p.sample()
+        x_2 = p.sample()
+
+        assert x_1 != x_2
+
     def test_sample_uses_rng(self) -> None:
-        """Sampling should draw from the provided RNG."""
+        """Test that sampling uses the provided random number generator."""
         rng_1 = numpy.random.default_rng(1234)
         p = prior.Uniform(2, 5)
         x_1 = p.sample(rng_1)
@@ -197,7 +207,7 @@ class TestPriors:
     """Tests for the Priors dataclass."""
 
     def test_counts_and_names(self) -> None:
-        """Ensure sampled parameters are tracked in field order."""
+        """Test that sampled parameters are tracked in field order."""
         priors = prior.Priors(
             m_1=prior.Uniform(0, 1),
             m_2=prior.Uniform(1, 2),
@@ -215,7 +225,7 @@ class TestPriors:
         assert priors.theta_fixed == {"iota": 0.1, "t_c": 0.2, "theta": 0.3, "phi": 0.4, "psi": 0.5}
 
     def test_transform_applies_priors(self) -> None:
-        """Transform should map unit samples through each Prior in order."""
+        """Test that transform maps unit samples through each Prior in order."""
         priors = prior.Priors(
             m_1=prior.Uniform(0, 10),
             m_2=prior.Uniform(5, 15),
@@ -236,7 +246,7 @@ class TestPriors:
         assert numpy.allclose(x, numpy.array([0, 10, 200]))
 
     def test_boundary_indices(self) -> None:
-        """Check periodic and reflective indices matches Priors order."""
+        """Test that periodic and reflective indices match Priors order."""
         priors = prior.Priors(
             m_1=prior.Uniform(0, 1, boundary="periodic"),
             m_2=prior.Uniform(0, 1),
@@ -253,7 +263,7 @@ class TestPriors:
         assert priors.reflective_indices == [2, 3]
 
     def test_sample_returns_signal_parameters(self, rng_default: numpy.random.Generator) -> None:
-        """Sampling should produce a SignalParameters instance with set random number generation."""
+        """Test that sampling produces a SignalParameters instance with set random number generation."""
         priors = prior.Priors(
             m_1=prior.Uniform(0, 1),
             m_2=2,

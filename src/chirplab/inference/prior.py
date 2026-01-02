@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING, Literal, override
 
 import numpy
 
-from . import constants, interferometer
+from chirplab import constants
+from chirplab.simulation import interferometer
 
 type BOUNDARY_TYPES = None | Literal["periodic", "reflective"]
 

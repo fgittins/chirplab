@@ -3,7 +3,8 @@
 import numpy
 import pytest
 
-from chirplab import constants, interferometer, waveform
+from chirplab import constants
+from chirplab.simulation import interferometer, waveform
 
 
 @pytest.fixture(scope="session")
