@@ -52,7 +52,7 @@ class Prior(ABC):
         """
         pass
 
-    def sample(self, rng: numpy.random.Generator) -> float:
+    def sample(self, rng: None | numpy.random.Generator = None) -> float:
         """
         Sample from the prior distribution.
 
@@ -66,6 +66,9 @@ class Prior(ABC):
         x
             Sample drawn from the prior distribution.
         """
+        if rng is None:
+            rng = numpy.random.default_rng()
+
         u = rng.uniform(0, 1)
         return self.transform(u)
 
@@ -227,7 +230,7 @@ class Priors:
             x[i] = prior.transform(u[i])
         return x
 
-    def sample(self, rng: numpy.random.Generator) -> interferometer.SignalParameters:
+    def sample(self, rng: None | numpy.random.Generator = None) -> interferometer.SignalParameters:
         """
         Sample from the joint prior distribution.
 
