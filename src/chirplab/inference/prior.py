@@ -1,7 +1,7 @@
 """Module for prior distributions."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Literal, override
+from typing import Literal
 
 import numpy
 

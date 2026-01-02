@@ -72,15 +72,15 @@ class TestLikelihood:
 
         assert ln_l_noise_1 == ln_l_noise_2
 
-    def test_calculate_log_likelihood_returns_real(
+    def test_calculate_log_pdf_returns_real(
         self, likelihood_default: likelihood.Likelihood, theta_default: interferometer.SignalParameters
     ) -> None:
-        """Test that calculate_log_likelihood returns a real number."""
-        ln_l = likelihood_default.calculate_log_likelihood(theta_default)
+        """Test that calculate_log_pdf returns a real number."""
+        ln_l = likelihood_default.calculate_log_pdf(theta_default)
 
         assert isinstance(ln_l, (float, numpy.floating))
 
-    def test_calculate_log_likelihood_zero_noise(
+    def test_calculate_log_pdf_zero_noise(
         self,
         injected_interferometer_zero_noise_default: interferometer.Interferometer,
         model_default: waveform.WaveformModel,
@@ -88,21 +88,21 @@ class TestLikelihood:
     ) -> None:
         """Test log-likelihood calculation with zero noise."""
         like = likelihood.Likelihood(injected_interferometer_zero_noise_default, model_default)
-        ln_l = like.calculate_log_likelihood(theta_default)
+        ln_l = like.calculate_log_pdf(theta_default)
 
         assert not numpy.isnan(ln_l)
         assert not numpy.isinf(ln_l)
 
-    def test_calculate_log_likelihood_with_noise(
+    def test_calculate_log_pdf_with_noise(
         self, likelihood_default: likelihood.Likelihood, theta_default: interferometer.SignalParameters
     ) -> None:
         """Test log-likelihood calculation with noise."""
-        ln_l = likelihood_default.calculate_log_likelihood(theta_default)
+        ln_l = likelihood_default.calculate_log_pdf(theta_default)
 
         assert not numpy.isnan(ln_l)
         assert not numpy.isinf(ln_l)
 
-    def test_calculate_log_likelihood_wrong_parameters(
+    def test_calculate_log_pdf_wrong_parameters(
         self,
         injected_interferometer_zero_noise_default: interferometer.Interferometer,
         model_default: waveform.WaveformModel,
@@ -111,7 +111,7 @@ class TestLikelihood:
         """Test log-likelihood with incorrect signal parameters."""
         like = likelihood.Likelihood(injected_interferometer_zero_noise_default, model_default)
         theta_wrong = replace(theta_default, m_1=20 * constants.M_SUN, m_2=20 * constants.M_SUN, r=2 * theta_default.r)
-        ln_l_true = like.calculate_log_likelihood(theta_default)
-        ln_l_wrong = like.calculate_log_likelihood(theta_wrong)
+        ln_l_true = like.calculate_log_pdf(theta_default)
+        ln_l_wrong = like.calculate_log_pdf(theta_wrong)
 
         assert ln_l_true > ln_l_wrong
