@@ -5,6 +5,7 @@ description = "Parameter estimation of gravitational-wave signals."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "dynesty>=3.0.0",
     "numpy>=2.3.5",
 ]
 
@@ -84,6 +85,7 @@ no_implicit_reexport = true
 strict_equality = true
 strict_bytes = true
 extra_checks = true
+mypy_path = "typings"
 
 [tool.coverage.report]
 exclude_also = [
