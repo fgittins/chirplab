@@ -58,7 +58,6 @@ class WaveformModel(ABC):
         Maximum frequency for the waveform (Hz).
     """
 
-    @abstractmethod
     def __init__(self, f_max: float = constants.INF) -> None:
         self.f_max = f_max
 
