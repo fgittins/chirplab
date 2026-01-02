@@ -210,7 +210,7 @@ class TestInterferometer:
         assert not numpy.allclose(ifo.d_tilde, 0, RTOL, ATOL)
 
     @pytest.mark.parametrize(
-        "theta, phi, psi, f_plus_expected, f_cross_expected",
+        ("theta", "phi", "psi", "f_plus_expected", "f_cross_expected"),
         [
             (0, 0, 0, 1, 0),
             (constants.PI / 2, 0, 0, 1 / 2, 0),

@@ -3,9 +3,9 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import numpy
+    import numpy.typing
 
-from . import interferometer, waveform
+    from . import interferometer, waveform
 
 
 class Likelihood:

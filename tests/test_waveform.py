@@ -56,7 +56,7 @@ class TestWaveformParameters:
         assert theta_default.m_total == 60 * constants.M_SUN
 
     @pytest.mark.parametrize(
-        "m_1, m_2",
+        ("m_1", "m_2"),
         [
             (30 * constants.M_SUN, 30 * constants.M_SUN),
             (30 * constants.M_SUN, 15 * constants.M_SUN),

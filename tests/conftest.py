@@ -34,7 +34,7 @@ def model_default() -> waveform.WaveformModel:
     return waveform.NewtonianWaveformModel()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def rng_default() -> numpy.random.Generator:
     """Return default random number generator for testing."""
     return numpy.random.default_rng(42)

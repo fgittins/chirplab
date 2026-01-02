@@ -7,8 +7,6 @@ import numpy
 
 from . import constants, waveform
 
-PWD = Path(__file__).parent
-
 # TODO: add multiple interferometers
 # TODO: include right ascension and declination for sky location
 
@@ -345,8 +343,9 @@ class LIGO(Interferometer):
     """
 
     def __init__(self, grid: Grid, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
+        pwd = Path(__file__).parent
         band = (20, 2048)
-        super().__init__(grid, PWD / "data/aligo_O4high.txt", band, rng, is_zero_noise)
+        super().__init__(grid, pwd / "data/aligo_O4high.txt", band, rng, is_zero_noise)
 
 
 def calculate_inner_product(
