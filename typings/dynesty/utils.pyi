@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from typing import Any, NamedTuple, TypedDict
+from typing import Any, Literal, NamedTuple, TypedDict, overload
 
 import numpy
 from dynesty import bounding
@@ -29,6 +29,52 @@ class IteratorResult(NamedTuple):
     delta_logz: float
     blob: Any
     proposal_stats: None | ProposalStatsDict
+
+def mean_and_cov(
+    samples: numpy.typing.NDArray[numpy.floating], weights: numpy.typing.NDArray[numpy.floating]
+) -> tuple[numpy.typing.NDArray[numpy.floating], numpy.typing.NDArray[numpy.floating]]: ...
+def resample_equal(
+    samples: numpy.typing.NDArray[numpy.floating],
+    weights: numpy.typing.NDArray[numpy.floating],
+    rstate: None | numpy.random.Generator = None,
+) -> numpy.typing.NDArray[numpy.floating]: ...
+def quantile(
+    x: numpy.typing.NDArray[numpy.floating],
+    q: numpy.typing.NDArray[numpy.floating],
+    weights: None | numpy.typing.NDArray[numpy.floating] = None,
+) -> numpy.typing.NDArray[numpy.floating]: ...
+def jitter_run(res: Results, rstate: None | numpy.random.Generator = None, approx: bool = False) -> Results: ...
+@overload
+def resample_run(
+    res: Results, rstate: None | numpy.random.Generator = None, return_idx: Literal[False] = False
+) -> Results: ...
+@overload
+def resample_run(
+    res: Results, rstate: None | numpy.random.Generator = None, return_idx: Literal[True] = True
+) -> tuple[Results, numpy.typing.NDArray[numpy.int_]]: ...
+def reweight_run(
+    res: Results,
+    logp_new: numpy.typing.NDArray[numpy.floating],
+    logp_old: None | numpy.typing.NDArray[numpy.floating] = None,
+) -> Results: ...
+def unravel_run(res: Results, print_progress: bool = True) -> list[Results]: ...
+def merge_runs(res_list: list[Results], print_progress: bool = True) -> Results: ...
+@overload
+def kld_error(
+    res: Results,
+    error: Literal["jitter", "resample"] = "jitter",
+    rstate: None | numpy.random.Generator = None,
+    return_new: Literal[False] = False,
+    approx: bool = False,
+) -> numpy.typing.NDArray[numpy.floating]: ...
+@overload
+def kld_error(
+    res: Results,
+    error: Literal["jitter", "resample"] = "jitter",
+    rstate: None | numpy.random.Generator = None,
+    return_new: Literal[True] = True,
+    approx: bool = False,
+) -> tuple[numpy.typing.NDArray[numpy.floating], Results]: ...
 
 class Results:
     logl: numpy.typing.NDArray[numpy.floating]
