@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from typing import Any, NamedTuple, TypedDict
 
 import numpy
@@ -12,8 +13,8 @@ class ProposalStatsDict(TypedDict, total=False):
 
 class IteratorResult(NamedTuple):
     worst: int
-    ustar: float
-    vstar: float
+    ustar: numpy.typing.NDArray[numpy.floating]
+    vstar: numpy.typing.NDArray[numpy.floating]
     loglstar: float
     logvol: float
     logwt: float
@@ -51,4 +52,11 @@ class Results:
     scale: numpy.typing.NDArray[numpy.floating]
     blob: numpy.typing.NDArray[Any]
     proposal_stats: numpy.typing.NDArray[Any]
+    def copy(self) -> Results: ...
+    def asdict(self) -> dict[str, Any]: ...
+    def keys(self) -> list[str]: ...
+    def items(self) -> Generator[Any]: ...
+    def isdynamic(self) -> bool: ...
+    def importance_weights(self) -> numpy.typing.NDArray[numpy.floating]: ...
+    def samples_equal(self) -> numpy.typing.NDArray[numpy.floating]: ...
     def summary(self) -> None: ...
