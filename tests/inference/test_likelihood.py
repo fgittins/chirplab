@@ -14,20 +14,7 @@ if TYPE_CHECKING:
     from chirplab.simulation import waveform
 
 
-@pytest.fixture(scope="class")
-def injected_interferometer_default(
-    grid_default: interferometer.Grid,
-    model_default: waveform.WaveformModel,
-    theta_default: interferometer.SignalParameters,
-) -> interferometer.Interferometer:
-    """Return default injected interferometer for testing."""
-    rng = numpy.random.default_rng(42)
-    ifo = interferometer.LIGO(grid_default, rng=rng)
-    ifo.inject_signal(model_default, theta_default)
-    return ifo
-
-
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="session")
 def injected_interferometer_zero_noise_default(
     grid_default: interferometer.Grid,
     model_default: waveform.WaveformModel,
@@ -37,14 +24,6 @@ def injected_interferometer_zero_noise_default(
     ifo = interferometer.LIGO(grid_default, is_zero_noise=True)
     ifo.inject_signal(model_default, theta_default)
     return ifo
-
-
-@pytest.fixture(scope="class")
-def likelihood_default(
-    injected_interferometer_default: interferometer.Interferometer, model_default: waveform.WaveformModel
-) -> likelihood.Likelihood:
-    """Return default likelihood object for testing."""
-    return likelihood.Likelihood(injected_interferometer_default, model_default)
 
 
 class TestLikelihood:

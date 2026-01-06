@@ -18,6 +18,7 @@ class UsePoolDict(TypedDict, total=False):
     update_bound: bool
 
 class NestedSampler(sampler.Sampler):
+    nlive: int
     def __new__(
         cls,
         loglikelihood: Callable[Concatenate[numpy.typing.NDArray[numpy.floating], ...], numpy.floating],
