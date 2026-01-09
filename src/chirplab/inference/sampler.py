@@ -155,7 +155,7 @@ class NestedSampler:
         x
             Sampled parameters.
         likelihood
-            likelihood function for gravitational-wave signals.
+            Likelihood function for gravitational-wave signals.
         theta_name_sample
             Names of sampled parameters.
         theta_fixed
