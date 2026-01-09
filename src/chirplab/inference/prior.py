@@ -1,7 +1,7 @@
 """Module for prior distributions."""
 
 from abc import ABC, abstractmethod
-from typing import Literal
+from typing import Literal, overload
 
 import numpy
 from astropy import cosmology, units
@@ -273,10 +273,16 @@ class Priors:
         Prior on the azimuthal angle of the binary in the detector frame (rad).
     psi
         Prior on the polarisation angle of the binary in the detector frame (rad).
+
+    Notes
+    -----
+    Instead of `m_1` and `m_2`, priors on the chirp mass `m_chirp` (kg) and mass ratio `q` can be provided.
     """
 
+    @overload
     def __init__(
         self,
+        *,
         m_1: Prior | float,
         m_2: Prior | float,
         r: Prior | float,
@@ -286,9 +292,46 @@ class Priors:
         theta: Prior | float,
         phi: Prior | float,
         psi: Prior | float,
+    ) -> None: ...
+    @overload
+    def __init__(
+        self,
+        *,
+        m_chirp: Prior | float,
+        q: Prior | float,
+        r: Prior | float,
+        iota: Prior | float,
+        t_c: Prior | float,
+        phi_c: Prior | float,
+        theta: Prior | float,
+        phi: Prior | float,
+        psi: Prior | float,
+    ) -> None: ...
+    def __init__(
+        self,
+        *,
+        m_1: None | Prior | float = None,
+        m_2: None | Prior | float = None,
+        m_chirp: None | Prior | float = None,
+        q: None | Prior | float = None,
+        r: Prior | float,
+        iota: Prior | float,
+        t_c: Prior | float,
+        phi_c: Prior | float,
+        theta: Prior | float,
+        phi: Prior | float,
+        psi: Prior | float,
     ) -> None:
+        if (m_1 is not None and m_2 is not None) or (m_chirp is not None and q is not None):
+            pass
+        else:
+            msg = "Either (m_1 and m_2) or (m_chirp and q) must be provided."
+            raise ValueError(msg)
+
         self.m_1 = m_1
         self.m_2 = m_2
+        self.m_chirp = m_chirp
+        self.q = q
         self.r = r
         self.iota = iota
         self.t_c = t_c

@@ -59,6 +59,7 @@ class WaveformParameters:
     ) -> None:
         if m_1 is not None and m_2 is not None:
             m_chirp = (m_1 * m_2) ** (3 / 5) / (m_1 + m_2) ** (1 / 5)
+            q = m_2 / m_1
         elif m_chirp is not None and q is not None:
             m_1 = m_chirp * (1 + q) ** (1 / 5) / q ** (3 / 5)
             m_2 = q * m_1
@@ -74,11 +75,8 @@ class WaveformParameters:
         self.phi_c = phi_c
 
         self.m_chirp = m_chirp
-
-    @property
-    def m_total(self) -> float:
-        """Total mass of the binary (kg)."""
-        return self.m_1 + self.m_2
+        self.q = q
+        self.m_total = self.m_1 + self.m_2
 
 
 class WaveformModel(ABC):

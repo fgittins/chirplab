@@ -229,6 +229,43 @@ class TestUniformComovingVolume:
 class TestPriors:
     """Tests for the Priors dataclass."""
 
+    def test_initialisation(self) -> None:
+        """Test Priors dataclass initialisation."""
+        priors = prior.Priors(
+            m_1=prior.Uniform(0, 1),
+            m_2=prior.Uniform(1, 2),
+            r=prior.Uniform(10, 20),
+            iota=prior.Sine(),
+            t_c=0.5,
+            phi_c=prior.Cosine(),
+            theta=0.1,
+            phi=0.2,
+            psi=0.3,
+        )
+
+        assert isinstance(priors.m_1, prior.Prior)
+        assert isinstance(priors.m_2, prior.Prior)
+        assert isinstance(priors.r, prior.Prior)
+        assert isinstance(priors.iota, prior.Prior)
+        assert isinstance(priors.t_c, float)
+        assert isinstance(priors.phi_c, prior.Prior)
+        assert isinstance(priors.theta, float)
+        assert isinstance(priors.phi, float)
+        assert isinstance(priors.psi, float)
+
+    def test_initialisation_missing_parameters(self) -> None:
+        """Test Priors initialisation raises ValueError when required parameters are missing."""
+        with pytest.raises(ValueError, match="Either \\(m_1 and m_2\\) or \\(m_chirp and q\\) must be provided."):
+            prior.Priors(  # type: ignore[call-overload]
+                r=prior.Uniform(10, 20),
+                iota=prior.Sine(),
+                t_c=0.5,
+                phi_c=prior.Cosine(),
+                theta=0.1,
+                phi=0.2,
+                psi=0.3,
+            )
+
     def test_counts_and_names(self) -> None:
         """Test that sampled parameters are tracked in field order."""
         priors = prior.Priors(
@@ -301,12 +338,14 @@ class TestPriors:
         rng_1 = numpy.random.default_rng(2024)
         theta_1 = priors.sample(rng_1)
         rng_2 = numpy.random.default_rng(2024)
-        m_1 = priors.m_1.calculate_ppf(rng_2.uniform(0, 1)) if isinstance(priors.m_1, prior.Prior) else priors.m_1
-        r = priors.r.calculate_ppf(rng_2.uniform(0, 1)) if isinstance(priors.r, prior.Prior) else priors.r
-        iota = priors.iota.calculate_ppf(rng_2.uniform(0, 1)) if isinstance(priors.iota, prior.Prior) else priors.iota
-        phi_c = (
-            priors.phi_c.calculate_ppf(rng_2.uniform(0, 1)) if isinstance(priors.phi_c, prior.Prior) else priors.phi_c
-        )
+        assert isinstance(priors.m_1, prior.Prior)
+        m_1 = priors.m_1.calculate_ppf(rng_2.uniform(0, 1))
+        assert isinstance(priors.r, prior.Prior)
+        r = priors.r.calculate_ppf(rng_2.uniform(0, 1))
+        assert isinstance(priors.iota, prior.Prior)
+        iota = priors.iota.calculate_ppf(rng_2.uniform(0, 1))
+        assert isinstance(priors.phi_c, prior.Prior)
+        phi_c = priors.phi_c.calculate_ppf(rng_2.uniform(0, 1))
         theta_2 = interferometer.SignalParameters(
             m_1=m_1,
             m_2=2,
