@@ -204,6 +204,28 @@ class TestSine:
         assert x == constants.PI / 2
 
 
+class TestUniformComovingVolume:
+    """Tests for the UniformComovingVolume prior."""
+
+    def test_initialisation(self) -> None:
+        """Test UniformComovingVolume prior initialisation."""
+        r_min, r_max = 1e6 * constants.PC, 1e9 * constants.PC
+        p = prior.UniformComovingVolume(r_min, r_max)
+
+        assert p.r_min == r_min
+        assert p.r_max == r_max
+        assert p.is_periodic is False
+        assert p.is_reflective is False
+
+    def test_calculate_ppf_boundaries(self) -> None:
+        """Test that calculate_ppf returns correct boundary values."""
+        r_min, r_max = 1e6 * constants.PC, 1e9 * constants.PC
+        p = prior.UniformComovingVolume(r_min, r_max)
+
+        assert numpy.isclose(p.calculate_ppf(0), r_min)
+        assert numpy.isclose(p.calculate_ppf(1), r_max)
+
+
 class TestPriors:
     """Tests for the Priors dataclass."""
 

@@ -4,13 +4,14 @@ from abc import ABC, abstractmethod
 from typing import Literal
 
 import numpy
+from astropy import cosmology, units
+from scipy import integrate, interpolate
 
 from chirplab import constants
 from chirplab.simulation import interferometer
 
 type BOUNDARY_TYPES = None | Literal["periodic", "reflective"]
 
-# TODO: add uniform in comoving volume prior
 # TODO: add constraint prior
 # TODO: add Gaussian prior
 
@@ -186,6 +187,66 @@ class Sine(Prior):
         cos_x_max = numpy.cos(self.x_max)
         x: numpy.float64 = numpy.arccos(cos_x_min + (cos_x_max - cos_x_min) * q)
         return x
+
+
+class UniformComovingVolume(Prior):
+    """
+    Uniform in comoving volume prior for the luminosity distance.
+
+    Parameters
+    ----------
+    r_min
+        Minimum luminosity distance (m).
+    r_max
+        Maximum luminosity distance (m).
+    boundary
+        Boundary condition for the prior.
+
+    Notes
+    -----
+    This prior assumes a flat Lambda-CDM cosmology with Planck 2018 parameters [1].
+
+    References
+    ----------
+    [1]  <https://docs.astropy.org/en/stable/cosmology/realizations.html>.
+    """
+
+    def __init__(self, r_min: float, r_max: float, boundary: BOUNDARY_TYPES = None) -> None:
+        super().__init__(boundary)
+        self.r_min = r_min
+        self.r_max = r_max
+
+        cosmo = cosmology.Planck18
+        z_min = cosmology.z_at_value(cosmo.luminosity_distance, r_min * units.m).value
+        z_max = cosmology.z_at_value(cosmo.luminosity_distance, r_max * units.m).value
+
+        z_array = numpy.linspace(z_min, z_max, 1_000)
+        pdf_array = cosmo.differential_comoving_volume(z_array).value
+
+        r_array = cosmo.luminosity_distance(z_array).value * 1e6 * constants.PC
+        dr_dz_array = numpy.gradient(r_array, z_array)
+        pdf_array /= dr_dz_array
+
+        pdf_array /= numpy.trapezoid(pdf_array, r_array)
+        cdf_array = integrate.cumulative_trapezoid(pdf_array, r_array, initial=0)
+
+        self.ppf_function = interpolate.CubicSpline(cdf_array, r_array)
+
+    def calculate_ppf(self, q: float) -> numpy.float64:
+        """
+        Calculate the percent-point function (inverse cumulative distribution function).
+
+        Parameters
+        ----------
+        q
+            Lower-tail probability.
+
+        Returns
+        -------
+        x
+            Quantile corresponding to the given probability.
+        """
+        return numpy.float64(self.ppf_function(q))
 
 
 class Priors:
