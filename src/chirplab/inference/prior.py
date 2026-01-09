@@ -5,15 +5,12 @@ from typing import Literal, overload
 
 import numpy
 from astropy import cosmology, units
-from scipy import integrate, interpolate
+from scipy import integrate, interpolate, special
 
 from chirplab import constants
 from chirplab.simulation import interferometer
 
 type BOUNDARY_TYPES = None | Literal["periodic", "reflective"]
-
-# TODO: add constraint prior
-# TODO: add Gaussian prior
 
 
 class Prior(ABC):
@@ -186,6 +183,43 @@ class Sine(Prior):
         cos_x_min = numpy.cos(self.x_min)
         cos_x_max = numpy.cos(self.x_max)
         x: numpy.float64 = numpy.arccos(cos_x_min + (cos_x_max - cos_x_min) * q)
+        return x
+
+
+class Gaussian(Prior):
+    """
+    Gaussian prior.
+
+    Parameters
+    ----------
+    mu
+        Mean of the prior.
+    sigma
+        Standard deviation of the prior.
+    boundary
+        Boundary condition for the prior.
+    """
+
+    def __init__(self, mu: float = 0, sigma: float = 1, boundary: BOUNDARY_TYPES = None) -> None:
+        super().__init__(boundary)
+        self.mu = mu
+        self.sigma = sigma
+
+    def calculate_ppf(self, q: float) -> numpy.float64:
+        """
+        Calculate the percent-point function (inverse cumulative distribution function).
+
+        Parameters
+        ----------
+        q
+            Lower-tail probability.
+
+        Returns
+        -------
+        x
+            Quantile corresponding to the given probability.
+        """
+        x: numpy.float64 = self.mu + self.sigma * special.erfinv(2 * q - 1) * 2 ** (1 / 2)
         return x
 
 

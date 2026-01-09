@@ -204,6 +204,27 @@ class TestSine:
         assert x == constants.PI / 2
 
 
+class TestGaussian:
+    """Tests for the Gaussian prior."""
+
+    def test_initialisation(self) -> None:
+        """Test Gaussian prior initialisation."""
+        mu, sigma = 1, 2
+        p = prior.Gaussian(mu, sigma, "periodic")
+
+        assert p.mu == mu
+        assert p.sigma == sigma
+        assert p.is_periodic is True
+        assert p.is_reflective is False
+
+    def test_calculate_ppf_at_mean(self) -> None:
+        """Test that calculate_ppf at 0.5 returns the mean."""
+        mu, sigma = 2, 0.5
+        p = prior.Gaussian(mu, sigma)
+
+        assert p.calculate_ppf(0.5) == mu
+
+
 class TestUniformComovingVolume:
     """Tests for the UniformComovingVolume prior."""
 
