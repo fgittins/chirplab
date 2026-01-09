@@ -148,14 +148,14 @@ class NestedSampler:
         theta_fixed: dict[str, float],
     ) -> numpy.float64:
         """
-        Calculate log of the Likelihood function.
+        Calculate log of the likelihood function.
 
         Parameters
         ----------
         x
             Sampled parameters.
         likelihood
-            Likelihood function for gravitational-wave signals.
+            likelihood function for gravitational-wave signals.
         theta_name_sample
             Names of sampled parameters.
         theta_fixed
@@ -164,7 +164,7 @@ class NestedSampler:
         Returns
         -------
         log_likelihood
-            Log of the Likelihood function.
+            Log of the likelihood function.
         """
         theta_sampled = dict(zip(theta_name_sample, x, strict=False))
         theta = interferometer.SignalParameters(**theta_sampled, **theta_fixed)
