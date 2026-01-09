@@ -51,23 +51,40 @@ class TestWaveformParameters:
         assert theta.iota == constants.PI / 3
         assert theta.t_c == 100
         assert theta.phi_c == 1.5
+        assert theta.m_chirp == (theta.m_1 * theta.m_2) ** (3 / 5) / (theta.m_1 + theta.m_2) ** (1 / 5)
+
+    def test_initialisation_with_m_chirp_and_q(self) -> None:
+        """Test that WaveformParameters can be initialised with m_chirp and q."""
+        m_chirp = 25 * constants.M_SUN
+        q = 1
+        theta = waveform.WaveformParameters(
+            m_chirp=m_chirp,
+            q=q,
+            r=500e6 * constants.PC,
+            iota=constants.PI / 3,
+            t_c=100,
+            phi_c=1.5,
+        )
+
+        m_1 = m_chirp * (1 + q) ** (1 / 5) / q ** (3 / 5)
+        m_2 = q * m_1
+
+        assert theta.m_1 == m_1
+        assert theta.m_2 == m_2
+
+    def test_initialisation_missing_parameters(self) -> None:
+        """Test that initialisation raises ValueError when required parameters are missing."""
+        with pytest.raises(ValueError, match="Either \\(m_1 and m_2\\) or \\(m_chirp and q\\) must be provided."):
+            waveform.WaveformParameters(  # type: ignore[call-overload]
+                r=500e6 * constants.PC,
+                iota=constants.PI / 3,
+                t_c=100,
+                phi_c=1.5,
+            )
 
     def test_total_mass_property(self, theta_default: waveform.WaveformParameters) -> None:
         """Test that the m_total property correctly calculates total mass."""
         assert theta_default.m_total == 60 * constants.M_SUN
-
-    @pytest.mark.parametrize(
-        ("m_1", "m_2"),
-        [
-            (30 * constants.M_SUN, 30 * constants.M_SUN),
-            (30 * constants.M_SUN, 15 * constants.M_SUN),
-        ],
-    )
-    def test_chirp_mass_property(self, m_1: float, m_2: float, theta_default: waveform.WaveformParameters) -> None:
-        """Test that the m_chirp property correctly calculates chirp mass."""
-        theta = replace(theta_default, m_1=m_1, m_2=m_2)
-
-        assert theta.m_chirp == (theta.m_1 * theta.m_2) ** (3 / 5) / (theta.m_1 + theta.m_2) ** (1 / 5)
 
 
 class TestNewtonianWaveformModel:

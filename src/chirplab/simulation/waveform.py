@@ -2,13 +2,14 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import overload
 
 import numpy
 
 from chirplab import constants
 
 
-@dataclass
+@dataclass(init=False)
 class WaveformParameters:
     """
     Parameters of the gravitational waveform.
@@ -27,6 +28,10 @@ class WaveformParameters:
         Coalescence time (s).
     phi_c
         Coalescence phase (rad).
+
+    Notes
+    -----
+    Instead of `m_1` and `m_2`, the chirp mass `m_chirp` (kg) and mass ratio `q` can be provided.
     """
 
     m_1: float
@@ -36,16 +41,44 @@ class WaveformParameters:
     t_c: float
     phi_c: float
 
+    @overload
+    def __init__(self, *, m_1: float, m_2: float, r: float, iota: float, t_c: float, phi_c: float) -> None: ...
+    @overload
+    def __init__(self, *, m_chirp: float, q: float, r: float, iota: float, t_c: float, phi_c: float) -> None: ...
+    def __init__(
+        self,
+        *,
+        m_1: None | float = None,
+        m_2: None | float = None,
+        m_chirp: None | float = None,
+        q: None | float = None,
+        r: float,
+        iota: float,
+        t_c: float,
+        phi_c: float,
+    ) -> None:
+        if m_1 is not None and m_2 is not None:
+            m_chirp = (m_1 * m_2) ** (3 / 5) / (m_1 + m_2) ** (1 / 5)
+        elif m_chirp is not None and q is not None:
+            m_1 = m_chirp * (1 + q) ** (1 / 5) / q ** (3 / 5)
+            m_2 = q * m_1
+        else:
+            msg = "Either (m_1 and m_2) or (m_chirp and q) must be provided."
+            raise ValueError(msg)
+
+        self.m_1 = m_1
+        self.m_2 = m_2
+        self.r = r
+        self.iota = iota
+        self.t_c = t_c
+        self.phi_c = phi_c
+
+        self.m_chirp = m_chirp
+
     @property
     def m_total(self) -> float:
         """Total mass of the binary (kg)."""
         return self.m_1 + self.m_2
-
-    @property
-    def m_chirp(self) -> float:
-        """Chirp mass of the binary (kg)."""
-        m_chirp: float = (self.m_1 * self.m_2) ** (3 / 5) / (self.m_1 + self.m_2) ** (1 / 5)
-        return m_chirp
 
 
 class WaveformModel(ABC):

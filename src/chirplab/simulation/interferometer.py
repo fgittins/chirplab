@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import overload
 
 import numpy
 
@@ -12,7 +13,7 @@ from chirplab.simulation import waveform
 # TODO: include right ascension and declination for sky location
 
 
-@dataclass
+@dataclass(init=False)
 class SignalParameters(waveform.WaveformParameters):
     """
     Parameters of the gravitational-wave signal as measured by the detector.
@@ -37,11 +38,70 @@ class SignalParameters(waveform.WaveformParameters):
         Azimuthal angle of the binary in the detector frame (rad).
     psi
         Polarisation angle of the binary in the detector frame (rad).
+
+    Notes
+    -----
+    Instead of `m_1` and `m_2`, the chirp mass `m_chirp` (kg) and mass ratio `q` can be provided.
     """
 
     theta: float
     phi: float
     psi: float
+
+    @overload
+    def __init__(
+        self,
+        *,
+        m_1: float,
+        m_2: float,
+        r: float,
+        iota: float,
+        t_c: float,
+        phi_c: float,
+        theta: float,
+        phi: float,
+        psi: float,
+    ) -> None: ...
+    @overload
+    def __init__(
+        self,
+        *,
+        m_chirp: float,
+        q: float,
+        r: float,
+        iota: float,
+        t_c: float,
+        phi_c: float,
+        theta: float,
+        phi: float,
+        psi: float,
+    ) -> None: ...
+    def __init__(
+        self,
+        *,
+        m_1: None | float = None,
+        m_2: None | float = None,
+        m_chirp: None | float = None,
+        q: None | float = None,
+        r: float,
+        iota: float,
+        t_c: float,
+        phi_c: float,
+        theta: float,
+        phi: float,
+        psi: float,
+    ) -> None:
+        if m_1 is not None and m_2 is not None:
+            super().__init__(m_1=m_1, m_2=m_2, r=r, iota=iota, t_c=t_c, phi_c=phi_c)
+        elif m_chirp is not None and q is not None:
+            super().__init__(m_chirp=m_chirp, q=q, r=r, iota=iota, t_c=t_c, phi_c=phi_c)
+        else:
+            msg = "Either (m_1 and m_2) or (m_chirp and q) must be provided."
+            raise ValueError(msg)
+
+        self.theta = theta
+        self.phi = phi
+        self.psi = psi
 
 
 @dataclass
