@@ -27,6 +27,25 @@ class NestedSampler:
         Joint prior distribution on the gravitational-wave signal parameters.
     rng
         Random number generator for the sampling.
+    nlive
+        Number of live points.
+    bound
+        Method used to approximately bound the prior using the current set of live points.
+    sample
+        Method used to sample uniformly within the likelihood constraint, conditioned on the provided bounds.
+    enlarge
+        Enlarge the volumes of the specified bounding object(s) by this fraction.
+    bootstrap
+        Compute this many bootstrapped realizations of the bounding objects.
+    walks
+        For the `"rwalk"` sampling option, the minimum number of steps before proposing a new live point.
+    facc
+        The target acceptance fraction for the `"rwalk"` sampling option.
+    slices
+        For the `"slice"`, `"rslice"` sampling options, the number of times to execute a "slice update" before proposing
+        a new live point.
+    ncdim
+        The number of clustering dimensions.
     """
 
     def __init__(
@@ -87,8 +106,25 @@ class NestedSampler:
 
         Parameters
         ----------
+        maxiter
+            Maximum number of iterations.
+        maxcall
+            Maximum number of likelihood evaluations.
         delta_ln_z
-            Stopping criterion in log-evidence.
+            Iteration will stop when the estimated contribution of the remaining prior volume to the total evidence
+            falls below this threshold.
+        log_l_max
+            Iteration will stop when the sampled ln(likelihood) exceeds the threshold set by logl_max.
+        add_live
+            Whether or not to add the remaining set of live points to the list of samples at the end of each run.
+        print_progress
+            Whether or not to output a simple summary of the current run that updates with each iteration.
+        save_bounds
+            Whether or not to save past bounding distributions used to bound the live points internally.
+        checkpoint_file
+            If provided, the state of the sampler will be saved into this file every `checkpoint_every` seconds.
+        checkpoint_every
+            The number of seconds between checkpoints that will save the internal state of the sampler.
         """
         self.sampler.run_nested(
             maxiter=maxiter,
