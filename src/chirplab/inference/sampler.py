@@ -25,7 +25,6 @@ class FirstUpdateDict(TypedDict, total=False):
 
 
 # TODO: add pool option for multiprocessing
-# TODO: add functionality for saving evaluation history
 # TODO: add checkpointing functionality with restore method
 
 
@@ -66,6 +65,8 @@ class NestedSampler:
         a new live point.
     ncdim
         The number of clustering dimensions.
+    history_filename
+        The filename where the history will go.
     """
 
     def __init__(
@@ -84,6 +85,7 @@ class NestedSampler:
         facc: float = 0.5,
         slices: None | int = None,
         ncdim: None | int = None,
+        history_filename: None | str = None,
     ) -> None:
         if rng is None:
             self.rng = numpy.random.default_rng()
@@ -104,6 +106,10 @@ class NestedSampler:
             update_interval=update_interval,
             first_update=first_update,
             rstate=self.rng,
+            queue_size=None,
+            pool=None,
+            use_pool=None,
+            live_points=None,
             logl_args=(likelihood, priors.theta_name_sample, priors.theta_fixed),
             enlarge=enlarge,
             bootstrap=bootstrap,
@@ -111,13 +117,16 @@ class NestedSampler:
             facc=facc,
             slices=slices,
             ncdim=ncdim,
+            blob=False,
+            save_evaluation_history=history_filename is not None,
+            history_filename=history_filename,
         )
 
     def run_nested(
         self,
         maxiter: None | int = None,
         maxcall: None | int = None,
-        delta_ln_z: float = 0.1,
+        delta_ln_z: None | float = None,
         ln_l_max: float = numpy.inf,
         add_live: bool = True,
         print_progress: bool = True,
@@ -135,8 +144,8 @@ class NestedSampler:
         delta_ln_z
             Iteration will stop when the estimated contribution of the remaining prior volume to the total evidence
             falls below this threshold.
-        log_l_max
-            Iteration will stop when the sampled ln(likelihood) exceeds the threshold set by logl_max.
+        ln_l_max
+            Iteration will stop when the sampled ln(likelihood) exceeds the threshold set by ln_l_max.
         add_live
             Whether or not to add the remaining set of live points to the list of samples at the end of each run.
         print_progress
@@ -152,9 +161,15 @@ class NestedSampler:
             add_live=add_live,
             print_progress=print_progress,
             save_bounds=save_bounds,
+            checkpoint_file=None,
+            checkpoint_every=60,
+            resume=False,
         )
 
-        self.results = self.sampler.results
+    @property
+    def results(self) -> dynesty.results.Results:
+        """Results of the nested sampling run."""
+        return self.sampler.results
 
     @staticmethod
     def calculate_log_likelihood(

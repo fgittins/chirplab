@@ -156,6 +156,8 @@ class TestNestedSampler:
         samp = sampler.NestedSampler(likelihood_default, priors_default, rng=rng_default)
         samp.run_nested(delta_ln_z=10_000)
 
+        assert samp.results is not None
+
 
 class TestBenchmark:
     """Tests for the benchmark function."""
