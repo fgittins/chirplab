@@ -11,6 +11,11 @@ class ProposalStatsDict(TypedDict, total=False):
     n_expand: int
     n_contract: int
 
+class SamplerHistoryItem(NamedTuple):
+    u: numpy.typing.NDArray[numpy.floating]
+    v: numpy.typing.NDArray[numpy.floating]
+    logl: float
+
 class IteratorResult(NamedTuple):
     worst: int
     ustar: numpy.typing.NDArray[numpy.floating]
@@ -29,6 +34,8 @@ class IteratorResult(NamedTuple):
     delta_logz: float
     blob: Any
     proposal_stats: None | ProposalStatsDict
+
+class RunRecord: ...
 
 def mean_and_cov(
     samples: numpy.typing.NDArray[numpy.floating], weights: numpy.typing.NDArray[numpy.floating]
@@ -51,7 +58,7 @@ def resample_run(
 @overload
 def resample_run(
     res: Results, rstate: None | numpy.random.Generator = None, return_idx: Literal[True] = True
-) -> tuple[Results, numpy.typing.NDArray[numpy.int_]]: ...
+) -> tuple[Results, numpy.typing.NDArray[numpy.integer]]: ...
 def reweight_run(
     res: Results,
     logp_new: numpy.typing.NDArray[numpy.floating],
@@ -78,13 +85,13 @@ def kld_error(
 
 class Results:
     logl: numpy.typing.NDArray[numpy.floating]
-    samples_it: numpy.typing.NDArray[numpy.int_]
-    samples_id: numpy.typing.NDArray[numpy.int_]
-    samples_n: numpy.typing.NDArray[numpy.int_]
+    samples_it: numpy.typing.NDArray[numpy.integer]
+    samples_id: numpy.typing.NDArray[numpy.integer]
+    samples_n: numpy.typing.NDArray[numpy.integer]
     samples_u: numpy.typing.NDArray[numpy.floating]
     samples: numpy.typing.NDArray[numpy.floating]
     niter: int
-    ncall: numpy.typing.NDArray[numpy.int_]
+    ncall: numpy.typing.NDArray[numpy.integer]
     logz: numpy.typing.NDArray[numpy.floating]
     logzerr: numpy.typing.NDArray[numpy.floating]
     logwt: numpy.typing.NDArray[numpy.floating]
@@ -93,8 +100,8 @@ class Results:
     logvol: numpy.typing.NDArray[numpy.floating]
     information: numpy.typing.NDArray[numpy.floating]
     bound: list[bounding.Bound]
-    bound_iter: numpy.typing.NDArray[numpy.int_]
-    samples_bound: numpy.typing.NDArray[numpy.int_]
+    bound_iter: numpy.typing.NDArray[numpy.integer]
+    samples_bound: numpy.typing.NDArray[numpy.integer]
     scale: numpy.typing.NDArray[numpy.floating]
     blob: numpy.typing.NDArray[Any]
     proposal_stats: numpy.typing.NDArray[Any]

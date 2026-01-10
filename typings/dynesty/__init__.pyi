@@ -1,3 +1,4 @@
-from dynesty.dynesty import NestedSampler
-
 __all__ = ["NestedSampler"]
+
+from dynesty import bounding, utils
+from dynesty.dynesty import NestedSampler

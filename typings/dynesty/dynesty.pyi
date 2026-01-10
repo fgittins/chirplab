@@ -1,42 +1,30 @@
 from collections.abc import Callable, Iterable
-from typing import Any, Concatenate, Literal, TypedDict
+from typing import Any, Concatenate, Literal
 
 import numpy
-from dynesty import sampler
+from dynesty import internal_samplers, sampler
 
-type BOUND_TYPES = Literal["none", "single", "multi", "balls", "cubes"]
-type SAMPLING_TYPES = Literal["auto", "unif", "rwalk", "slice", "rslice"]
-
-class FirstUpdateDict(TypedDict, total=False):
-    min_ncall: int
-    min_eff: float
-
-class UsePoolDict(TypedDict, total=False):
-    prior_transform: bool
-    loglikelihood: bool
-    propose_point: bool
-    update_bound: bool
+type SAMPLING_TYPES = Literal["auto", "unif", "rwalk", "slice", "rslice"] | internal_samplers.InternalSampler
 
 class NestedSampler(sampler.Sampler):
-    nlive: int
     def __new__(
         cls,
-        loglikelihood: Callable[Concatenate[numpy.typing.NDArray[numpy.floating], ...], numpy.floating],
+        loglikelihood: Callable[Concatenate[numpy.typing.NDArray[numpy.floating], ...], float],
         prior_transform: Callable[
             Concatenate[numpy.typing.NDArray[numpy.floating], ...], numpy.typing.NDArray[numpy.floating]
         ],
         ndim: int,
         nlive: int = 500,
-        bound: BOUND_TYPES = "multi",
+        bound: sampler.BOUND_TYPES = "multi",
         sample: SAMPLING_TYPES = "auto",
         periodic: None | Iterable[int] = None,
         reflective: None | Iterable[int] = None,
-        update_interval: None | float = None,
-        first_update: None | FirstUpdateDict = None,
+        update_interval: None | int | float = None,
+        first_update: None | sampler.FirstUpdateDict = None,
         rstate: None | numpy.random.Generator = None,
         queue_size: None | int = None,
         pool: None | Any = None,
-        use_pool: None | UsePoolDict = None,
+        use_pool: None | sampler.UsePoolDict = None,
         live_points: None | list[numpy.typing.NDArray[numpy.floating]] = None,
         logl_args: None | Iterable[Any] = None,
         logl_kwargs: None | dict[str, Any] = None,

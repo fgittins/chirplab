@@ -1,7 +1,7 @@
 """Module for sampling algorithms."""
 
 import time
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 import dynesty
 import numpy
@@ -9,10 +9,24 @@ import numpy
 from chirplab.simulation import interferometer
 
 if TYPE_CHECKING:
+    from dynesty import internal_samplers
+
     from chirplab.inference import likelihood, prior
 
-type BOUNDARY_TYPES = Literal["none", "single", "multi", "balls", "cubes"]
-type SAMPLE_TYPES = Literal["auto", "unif", "rwalk", "slice", "rslice"]
+type BOUNDARY_TYPES = Literal["none", "single", "multi", "balls", "cubes"] | dynesty.bounding.Bound
+type SAMPLE_TYPES = Literal["auto", "unif", "rwalk", "slice", "rslice"] | internal_samplers.InternalSampler
+
+
+class FirstUpdateDict(TypedDict, total=False):
+    """Dictionary for first update parameters."""
+
+    min_ncall: int
+    min_eff: float
+
+
+# TODO: add pool option for multiprocessing
+# TODO: add functionality for saving evaluation history
+# TODO: add checkpointing functionality with restore method
 
 
 class NestedSampler:
@@ -33,6 +47,12 @@ class NestedSampler:
         Method used to approximately bound the prior using the current set of live points.
     sample
         Method used to sample uniformly within the likelihood constraint, conditioned on the provided bounds.
+    update_interval
+        If an integer is passed, only update the proposal distribution every `update_interval`-th likelihood call. If a
+        float is passed, update the proposal after every `round(update_interval * nlive)`-th likelihood call.
+    first_update
+        A dictionary containing parameters governing when the sampler should first update the bounding distribution from
+        the unit cube (`"none"`) to the one specified by `sample`.
     enlarge
         Enlarge the volumes of the specified bounding object(s) by this fraction.
     bootstrap
@@ -56,6 +76,8 @@ class NestedSampler:
         nlive: int = 500,
         bound: BOUNDARY_TYPES = "multi",
         sample: SAMPLE_TYPES = "auto",
+        update_interval: None | int | float = None,
+        first_update: None | FirstUpdateDict = None,
         enlarge: None | float = None,
         bootstrap: None | int = None,
         walks: None | int = None,
@@ -79,6 +101,8 @@ class NestedSampler:
             sample=sample,
             periodic=priors.periodic_indices,
             reflective=priors.reflective_indices,
+            update_interval=update_interval,
+            first_update=first_update,
             rstate=self.rng,
             logl_args=(likelihood, priors.theta_name_sample, priors.theta_fixed),
             enlarge=enlarge,
@@ -98,8 +122,6 @@ class NestedSampler:
         add_live: bool = True,
         print_progress: bool = True,
         save_bounds: bool = True,
-        checkpoint_file: None | str = None,
-        checkpoint_every: float = 60,
     ) -> None:
         """
         Run the nested sampler.
@@ -121,10 +143,6 @@ class NestedSampler:
             Whether or not to output a simple summary of the current run that updates with each iteration.
         save_bounds
             Whether or not to save past bounding distributions used to bound the live points internally.
-        checkpoint_file
-            If provided, the state of the sampler will be saved into this file every `checkpoint_every` seconds.
-        checkpoint_every
-            The number of seconds between checkpoints that will save the internal state of the sampler.
         """
         self.sampler.run_nested(
             maxiter=maxiter,
@@ -134,8 +152,6 @@ class NestedSampler:
             add_live=add_live,
             print_progress=print_progress,
             save_bounds=save_bounds,
-            checkpoint_file=checkpoint_file,
-            checkpoint_every=checkpoint_every,
         )
 
         self.results = self.sampler.results
