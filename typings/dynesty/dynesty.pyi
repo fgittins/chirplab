@@ -23,7 +23,7 @@ class NestedSampler(sampler.Sampler):
         first_update: None | sampler.FirstUpdateDict = None,
         rstate: None | numpy.random.Generator = None,
         queue_size: None | int = None,
-        pool: None | Any = None,
+        pool: Any = None,
         use_pool: None | sampler.UsePoolDict = None,
         live_points: None | list[numpy.typing.NDArray[numpy.floating]] = None,
         logl_args: None | Iterable[Any] = None,
