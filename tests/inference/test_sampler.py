@@ -9,6 +9,8 @@ from chirplab import constants
 from chirplab.inference import likelihood, prior, sampler
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from chirplab.simulation import interferometer, waveform
 
 
@@ -38,20 +40,11 @@ class TestNestedSampler:
         rng_default: numpy.random.Generator,
     ) -> None:
         """Test that NestedSampler can be initialised with likelihood, priors and rng."""
-        samp = sampler.NestedSampler(likelihood_default, priors_default, rng=rng_default)
+        samp = sampler.NestedSampler(likelihood_default, priors_default, rng_default)
 
-        assert samp.sampler is not None
-        assert samp.rng == rng_default
         assert isinstance(samp.t_eval, float)
-
-    def test_initialisation_no_rng(
-        self, likelihood_default: likelihood.Likelihood, priors_default: prior.Priors
-    ) -> None:
-        """Test that NestedSampler can be initialised without providing rng."""
-        samp = sampler.NestedSampler(likelihood_default, priors_default)
-
-        assert samp.rng is not None
-        assert isinstance(samp.rng, numpy.random.Generator)
+        assert samp.is_restored is False
+        assert samp.sampler is not None
 
     def test_initialisation_with_custom_nlive(
         self,
@@ -61,7 +54,7 @@ class TestNestedSampler:
     ) -> None:
         """Test that NestedSampler can be initialised with custom nlive parameter."""
         nlive = 100
-        samp = sampler.NestedSampler(likelihood_default, priors_default, rng=rng_default, nlive=nlive)
+        samp = sampler.NestedSampler(likelihood_default, priors_default, rng_default, nlive)
 
         assert samp.sampler.nlive == nlive
 
@@ -72,8 +65,9 @@ class TestNestedSampler:
         rng_default: numpy.random.Generator,
     ) -> None:
         """Test that benchmark time is stored during initialisation."""
-        samp = sampler.NestedSampler(likelihood_default, priors_default, rng=rng_default)
+        samp = sampler.NestedSampler(likelihood_default, priors_default, rng_default)
 
+        assert isinstance(samp.t_eval, float)
         assert samp.t_eval > 0
 
     def test_calculate_log_likelihood_returns_float(
@@ -93,7 +87,6 @@ class TestNestedSampler:
             "phi": theta_default.phi,
             "psi": theta_default.psi,
         }
-
         ln_l = sampler.NestedSampler.calculate_log_likelihood(x, likelihood_default, theta_name_sample, theta_fixed)
 
         assert isinstance(ln_l, (float, numpy.floating))
@@ -115,7 +108,6 @@ class TestNestedSampler:
             "phi": theta_default.phi,
             "psi": theta_default.psi,
         }
-
         ln_l = sampler.NestedSampler.calculate_log_likelihood(x, likelihood_default, theta_name_sample, theta_fixed)
 
         assert not numpy.isnan(ln_l)
@@ -138,7 +130,6 @@ class TestNestedSampler:
             "phi": theta_default.phi,
             "psi": theta_default.psi,
         }
-
         ln_l_static = sampler.NestedSampler.calculate_log_likelihood(
             x, likelihood_default, theta_name_sample, theta_fixed
         )
@@ -153,10 +144,26 @@ class TestNestedSampler:
         rng_default: numpy.random.Generator,
     ) -> None:
         """Test that run_nested executes without errors."""
-        samp = sampler.NestedSampler(likelihood_default, priors_default, rng=rng_default)
-        samp.run_nested(delta_ln_z=10_000)
+        samp = sampler.NestedSampler(likelihood_default, priors_default, rng_default)
+        samp.run_nested(delta_ln_z=400)
 
         assert samp.results is not None
+
+    def test_restore(
+        self,
+        likelihood_default: likelihood.Likelihood,
+        priors_default: prior.Priors,
+        rng_default: numpy.random.Generator,
+        tmp_path: Path,
+    ) -> None:
+        """Test that NestedSampler can be restored from a checkpoint file."""
+        samp = sampler.NestedSampler(likelihood_default, priors_default, rng_default)
+        checkpoint_file = tmp_path / "checkpoint.save"
+        samp.run_nested(delta_ln_z=400, add_live=False, checkpoint_file=str(checkpoint_file))
+        samp_restored = sampler.NestedSampler.restore(str(checkpoint_file))
+
+        assert samp_restored.sampler is not None
+        assert samp_restored.is_restored is True
 
 
 class TestBenchmark:

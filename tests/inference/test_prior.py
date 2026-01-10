@@ -343,7 +343,7 @@ class TestPriors:
         assert priors.periodic_indices == [0, 4]
         assert priors.reflective_indices == [2, 3]
 
-    def test_sample_returns_signal_parameters(self, rng_default: numpy.random.Generator) -> None:
+    def test_sample_returns_signal_parameters(self) -> None:
         """Test that sampling produces a SignalParameters instance with set random number generation."""
         priors = prior.Priors(
             m_1=prior.Uniform(0, 1),

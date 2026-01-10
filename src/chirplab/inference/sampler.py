@@ -25,7 +25,6 @@ class FirstUpdateDict(TypedDict, total=False):
 
 
 # TODO: add pool option for multiprocessing
-# TODO: add checkpointing functionality with restore method
 
 
 class NestedSampler:
@@ -87,14 +86,11 @@ class NestedSampler:
         ncdim: None | int = None,
         history_filename: None | str = None,
     ) -> None:
-        if rng is None:
-            self.rng = numpy.random.default_rng()
-        else:
-            self.rng = rng
+        self.t_eval: None | float = benchmark(likelihood, priors, rng=rng)
 
-        self.t_eval = benchmark(likelihood, priors, rng=self.rng)
+        self.is_restored = False
 
-        self.sampler = dynesty.NestedSampler(
+        self.sampler: dynesty.sampler.Sampler = dynesty.NestedSampler(
             self.calculate_log_likelihood,
             priors.calculate_ppf,
             priors.n,
@@ -105,7 +101,7 @@ class NestedSampler:
             reflective=priors.reflective_indices,
             update_interval=update_interval,
             first_update=first_update,
-            rstate=self.rng,
+            rstate=rng,
             queue_size=None,
             pool=None,
             use_pool=None,
@@ -131,6 +127,8 @@ class NestedSampler:
         add_live: bool = True,
         print_progress: bool = True,
         save_bounds: bool = True,
+        checkpoint_file: None | str = None,
+        checkpoint_every: float = 60,
     ) -> None:
         """
         Run the nested sampler.
@@ -152,6 +150,10 @@ class NestedSampler:
             Whether or not to output a simple summary of the current run that updates with each iteration.
         save_bounds
             Whether or not to save past bounding distributions used to bound the live points internally.
+        checkpoint_file
+            The state of the sampler will be saved into this file every `checkpoint_every` seconds.
+        checkpoint_every
+            The number of seconds between checkpoints that will save the internal state of the sampler.
         """
         self.sampler.run_nested(
             maxiter=maxiter,
@@ -161,10 +163,32 @@ class NestedSampler:
             add_live=add_live,
             print_progress=print_progress,
             save_bounds=save_bounds,
-            checkpoint_file=None,
-            checkpoint_every=60,
-            resume=False,
+            checkpoint_file=checkpoint_file,
+            checkpoint_every=checkpoint_every,
+            resume=self.is_restored,
         )
+        print()
+
+    @classmethod
+    def restore(cls, filename: str) -> NestedSampler:
+        """
+        Restore the nested sampler from a checkpoint file.
+
+        Parameters
+        ----------
+        filename
+            Checkpoint filename.
+
+        Returns
+        -------
+        sampler
+            Restored nested sampler instance.
+        """
+        instance = cls.__new__(cls)
+        instance.t_eval = None
+        instance.is_restored = True
+        instance.sampler = dynesty.NestedSampler.restore(filename, pool=None)
+        return instance
 
     @property
     def results(self) -> dynesty.results.Results:
