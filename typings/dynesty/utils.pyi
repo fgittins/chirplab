@@ -82,6 +82,18 @@ def kld_error(
     return_new: Literal[True] = True,
     approx: bool = False,
 ) -> tuple[numpy.typing.NDArray[numpy.floating], Results]: ...
+def print_fn(
+    results: Results,
+    niter: int,
+    ncall: int,
+    add_live_it: None | int = None,
+    dlogz: None | float = None,
+    stop_val: None | float = None,
+    nbatch: None | int = None,
+    logl_min: float = -numpy.inf,
+    logl_max: float = numpy.inf,
+    pbar: Any = None,
+) -> None: ...
 
 class Results:
     logl: numpy.typing.NDArray[numpy.floating]
