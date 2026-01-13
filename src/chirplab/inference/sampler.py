@@ -184,11 +184,11 @@ class NestedSampler:
         sampler
             Restored nested sampler instance.
         """
-        instance = cls.__new__(cls)
-        instance.t_eval = None
-        instance.is_restored = True
-        instance.sampler = dynesty.NestedSampler.restore(filename, pool=None)
-        return instance
+        obj = cls.__new__(cls)
+        obj.t_eval = None
+        obj.is_restored = True
+        obj.sampler = dynesty.NestedSampler.restore(filename, pool=None)
+        return obj
 
     @property
     def results(self) -> dynesty.results.Results:
