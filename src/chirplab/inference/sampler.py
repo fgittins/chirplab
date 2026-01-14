@@ -122,8 +122,8 @@ class NestedSampler:
         self,
         maxiter: None | int = None,
         maxcall: None | int = None,
-        delta_ln_z: None | float = None,
-        ln_l_max: float = numpy.inf,
+        dlogz: None | float = None,
+        logl_max: float = numpy.inf,
         add_live: bool = True,
         print_progress: bool = True,
         save_bounds: bool = True,
@@ -139,11 +139,11 @@ class NestedSampler:
             Maximum number of iterations.
         maxcall
             Maximum number of likelihood evaluations.
-        delta_ln_z
+        dlogz
             Iteration will stop when the estimated contribution of the remaining prior volume to the total evidence
             falls below this threshold.
-        ln_l_max
-            Iteration will stop when the sampled ln(likelihood) exceeds the threshold set by ln_l_max.
+        logl_max
+            Iteration will stop when the sampled ln(likelihood) exceeds the threshold set by logl_max.
         add_live
             Whether or not to add the remaining set of live points to the list of samples at the end of each run.
         print_progress
@@ -158,8 +158,8 @@ class NestedSampler:
         self.sampler.run_nested(
             maxiter=maxiter,
             maxcall=maxcall,
-            dlogz=delta_ln_z,
-            logl_max=ln_l_max,
+            dlogz=dlogz,
+            logl_max=logl_max,
             add_live=add_live,
             print_progress=print_progress,
             save_bounds=save_bounds,

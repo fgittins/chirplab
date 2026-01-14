@@ -159,7 +159,7 @@ class TestNestedSampler:
     ) -> None:
         """Test that run_nested executes without errors."""
         samp = sampler.NestedSampler(likelihood_default, priors_default, rng_default)
-        samp.run_nested(delta_ln_z=600)
+        samp.run_nested(dlogz=600)
 
         assert samp.results is not None
 
@@ -173,7 +173,7 @@ class TestNestedSampler:
         """Test that NestedSampler can be restored from a checkpoint file."""
         samp = sampler.NestedSampler(likelihood_default, priors_default, rng_default)
         checkpoint_file = tmp_path / "checkpoint.save"
-        samp.run_nested(delta_ln_z=600, add_live=False, checkpoint_file=str(checkpoint_file))
+        samp.run_nested(dlogz=600, add_live=False, checkpoint_file=str(checkpoint_file))
         samp_restored = sampler.NestedSampler.restore(str(checkpoint_file))
 
         assert samp_restored.sampler is not None
