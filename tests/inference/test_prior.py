@@ -8,6 +8,28 @@ from chirplab.inference import prior
 from chirplab.simulation import interferometer
 
 
+class TestDeltaFunction:
+    """Tests for the DeltaFunction prior."""
+
+    def test_initialisation(self) -> None:
+        """Test DeltaFunction prior initialisation."""
+        x_peak = 2.5
+        p = prior.DeltaFunction(x_peak)
+
+        assert p.x_peak == x_peak
+        assert p.is_periodic is False
+        assert p.is_reflective is False
+
+    def test_calculate_ppf(self) -> None:
+        """Test that calculate_ppf always returns the fixed value."""
+        x_peak = -1.0
+        p = prior.DeltaFunction(x_peak)
+        q = numpy.array([0, 0.25, 0.5, 0.75, 1])
+        x = numpy.array([p.calculate_ppf(y) for y in q])
+
+        assert numpy.all(x == x_peak)
+
+
 class TestUniform:
     """Tests for the Uniform prior."""
 
@@ -253,74 +275,43 @@ class TestPriors:
     def test_initialisation(self) -> None:
         """Test Priors dataclass initialisation."""
         priors = prior.Priors(
-            m_1=prior.Uniform(0, 1),
-            m_2=prior.Uniform(1, 2),
-            r=prior.Uniform(10, 20),
-            iota=prior.Sine(),
-            t_c=0.5,
-            phi_c=prior.Cosine(),
-            theta=0.1,
-            phi=0.2,
-            psi=0.3,
+            {
+                "m_1": prior.Uniform(0, 1),
+                "m_2": prior.Uniform(1, 2),
+                "r": prior.Uniform(10, 20),
+                "iota": prior.Sine(),
+                "t_c": prior.DeltaFunction(0.5),
+                "phi_c": prior.Cosine(),
+                "theta": prior.DeltaFunction(0.1),
+                "phi": prior.DeltaFunction(0.2),
+                "psi": prior.DeltaFunction(0.3),
+            }
         )
 
-        assert isinstance(priors.m_1, prior.Prior)
-        assert isinstance(priors.m_2, prior.Prior)
-        assert isinstance(priors.r, prior.Prior)
-        assert isinstance(priors.iota, prior.Prior)
-        assert isinstance(priors.t_c, float)
-        assert isinstance(priors.phi_c, prior.Prior)
-        assert isinstance(priors.theta, float)
-        assert isinstance(priors.phi, float)
-        assert isinstance(priors.psi, float)
+        assert priors.n_dim == 5
+        assert priors.sample_names == ("m_1", "m_2", "r", "iota", "phi_c")
+        assert priors.theta_fixed == {"t_c": 0.5, "theta": 0.1, "phi": 0.2, "psi": 0.3}
+        assert priors.periodic_indices is None
+        assert priors.reflective_indices is None
 
-    def test_initialisation_missing_parameters(self) -> None:
-        """Test Priors initialisation raises ValueError when required parameters are missing."""
-        with pytest.raises(ValueError, match="Either \\(m_1 and m_2\\) or \\(m_chirp and q\\) must be provided."):
-            prior.Priors(  # type: ignore[call-overload]
-                r=prior.Uniform(10, 20),
-                iota=prior.Sine(),
-                t_c=0.5,
-                phi_c=prior.Cosine(),
-                theta=0.1,
-                phi=0.2,
-                psi=0.3,
-            )
-
-    def test_counts_and_names(self) -> None:
-        """Test that sampled parameters are tracked in field order."""
+    def test_prior_transform_applies_priors(self) -> None:
+        """Test that prior_transform maps unit samples through each Prior in order."""
         priors = prior.Priors(
-            m_1=prior.Uniform(0, 1),
-            m_2=prior.Uniform(1, 2),
-            r=prior.Uniform(10, 20),
-            iota=0.1,
-            t_c=0.2,
-            phi_c=prior.Sine(),
-            theta=0.3,
-            phi=0.4,
-            psi=0.5,
-        )
-
-        assert priors.n == 4
-        assert priors.theta_name_sample == ["m_1", "m_2", "r", "phi_c"]
-        assert priors.theta_fixed == {"iota": 0.1, "t_c": 0.2, "theta": 0.3, "phi": 0.4, "psi": 0.5}
-
-    def test_calculate_ppf_applies_priors(self) -> None:
-        """Test that calculate_ppf maps unit samples through each Prior in order."""
-        priors = prior.Priors(
-            m_1=prior.Uniform(0, 10),
-            m_2=prior.Uniform(5, 15),
-            r=prior.Uniform(100, 200),
-            iota=0.1,
-            t_c=1,
-            phi_c=2,
-            theta=0.3,
-            phi=0.4,
-            psi=0.5,
+            {
+                "m_1": prior.Uniform(0, 10),
+                "m_2": prior.Uniform(5, 15),
+                "r": prior.Uniform(100, 200),
+                "iota": prior.DeltaFunction(0.1),
+                "t_c": prior.DeltaFunction(1),
+                "phi_c": prior.DeltaFunction(2),
+                "theta": prior.DeltaFunction(0.3),
+                "phi": prior.DeltaFunction(0.4),
+                "psi": prior.DeltaFunction(0.5),
+            }
         )
         q = numpy.array([0, 0.5, 1])
         q_copy = q.copy()
-        x = priors.calculate_ppf(q)
+        x = priors.prior_transform(q)
 
         assert x.shape == q.shape
         assert numpy.array_equal(q, q_copy)
@@ -329,15 +320,17 @@ class TestPriors:
     def test_boundary_indices(self) -> None:
         """Test that periodic and reflective indices match Priors order."""
         priors = prior.Priors(
-            m_1=prior.Uniform(0, 1, boundary="periodic"),
-            m_2=prior.Uniform(0, 1),
-            r=prior.Uniform(0, 1, boundary="reflective"),
-            iota=prior.Sine(boundary="reflective"),
-            t_c=1,
-            phi_c=prior.Cosine(boundary="periodic"),
-            theta=0.3,
-            phi=0.4,
-            psi=0.5,
+            {
+                "m_1": prior.Uniform(0, 1, boundary="periodic"),
+                "m_2": prior.Uniform(0, 1),
+                "r": prior.Uniform(0, 1, boundary="reflective"),
+                "iota": prior.Sine(boundary="reflective"),
+                "t_c": prior.DeltaFunction(1),
+                "phi_c": prior.Cosine(boundary="periodic"),
+                "theta": prior.DeltaFunction(0.3),
+                "phi": prior.DeltaFunction(0.4),
+                "psi": prior.DeltaFunction(0.5),
+            }
         )
 
         assert priors.periodic_indices == [0, 4]
@@ -345,39 +338,50 @@ class TestPriors:
 
     def test_sample_returns_signal_parameters(self) -> None:
         """Test that sampling produces a SignalParameters instance with set random number generation."""
+        prior_m_1 = prior.Uniform(0, 1)
+        prior_m_2 = prior.Uniform(1, 2)
+        prior_r = prior.Uniform(10, 20)
+        prior_iota = prior.Sine()
+        prior_t_c = prior.DeltaFunction(1.5)
+        prior_phi_c = prior.Cosine()
+        prior_theta = prior.DeltaFunction(0.3)
+        prior_phi = prior.DeltaFunction(0.4)
+        prior_psi = prior.DeltaFunction(0.5)
         priors = prior.Priors(
-            m_1=prior.Uniform(0, 1),
-            m_2=2,
-            r=prior.Uniform(10, 20),
-            iota=prior.Sine(),
-            t_c=1.5,
-            phi_c=prior.Cosine(),
-            theta=0.3,
-            phi=0.4,
-            psi=0.5,
+            {
+                "m_1": prior_m_1,
+                "m_2": prior_m_2,
+                "r": prior_r,
+                "iota": prior_iota,
+                "t_c": prior_t_c,
+                "phi_c": prior_phi_c,
+                "theta": prior_theta,
+                "phi": prior_phi,
+                "psi": prior_psi,
+            }
         )
         rng_1 = numpy.random.default_rng(2024)
         theta_1 = priors.sample(rng_1)
         rng_2 = numpy.random.default_rng(2024)
-        assert isinstance(priors.m_1, prior.Prior)
-        m_1 = priors.m_1.calculate_ppf(rng_2.uniform(0, 1))
-        assert isinstance(priors.r, prior.Prior)
-        r = priors.r.calculate_ppf(rng_2.uniform(0, 1))
-        assert isinstance(priors.iota, prior.Prior)
-        iota = priors.iota.calculate_ppf(rng_2.uniform(0, 1))
-        assert isinstance(priors.phi_c, prior.Prior)
-        phi_c = priors.phi_c.calculate_ppf(rng_2.uniform(0, 1))
-        theta_2 = interferometer.SignalParameters(
-            m_1=m_1,
-            m_2=2,
-            r=r,
-            iota=iota,
-            t_c=1.5,
-            phi_c=phi_c,
-            theta=0.3,
-            phi=0.4,
-            psi=0.5,
-        )
+        m_1 = prior_m_1.sample(rng_2)
+        m_2 = prior_m_2.sample(rng_2)
+        r = prior_r.sample(rng_2)
+        iota = prior_iota.sample(rng_2)
+        t_c = prior_t_c.sample(rng_2)
+        phi_c = prior_phi_c.sample(rng_2)
+        theta = prior_theta.sample(rng_2)
+        phi = prior_phi.sample(rng_2)
+        psi = prior_psi.sample(rng_2)
+        theta_2 = {
+            "m_1": m_1,
+            "m_2": m_2,
+            "r": r,
+            "iota": iota,
+            "t_c": t_c,
+            "phi_c": phi_c,
+            "theta": theta,
+            "phi": phi,
+            "psi": psi,
+        }
 
-        assert isinstance(theta_1, interferometer.SignalParameters)
         assert theta_1 == theta_2

@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import overload
 
 import numpy
 
@@ -13,95 +12,67 @@ from chirplab.simulation import waveform
 # TODO: include right ascension and declination for sky location
 
 
-@dataclass(init=False)
-class SignalParameters(waveform.WaveformParameters):
+@dataclass(frozen=True, slots=True)
+class DetectorAngles:
     """
-    Parameters of the gravitational-wave signal as measured by the detector.
+    Angles defining the source location and orientation in the detector frame.
 
     Parameters
     ----------
-    m_1
-        Mass of the first component in the binary (kg).
-    m_2
-        Mass of the second component in the binary (kg).
-    r
-        Luminosity distance to the binary (m).
-    iota
-        Inclination angle of the binary (rad).
-    t_c
-        Coalescence time (s).
-    phi_c
-        Coalescence phase (rad).
     theta
         Polar angle of the binary in the detector frame (rad).
     phi
         Azimuthal angle of the binary in the detector frame (rad).
     psi
         Polarisation angle of the binary in the detector frame (rad).
-
-    Notes
-    -----
-    Instead of `m_1` and `m_2`, the chirp mass `m_chirp` (kg) and mass ratio `q` can be provided.
     """
 
     theta: float
     phi: float
     psi: float
 
-    @overload
-    def __init__(
-        self,
-        *,
-        m_1: float,
-        m_2: float,
-        r: float,
-        iota: float,
-        t_c: float,
-        phi_c: float,
-        theta: float,
-        phi: float,
-        psi: float,
-    ) -> None: ...
-    @overload
-    def __init__(
-        self,
-        *,
-        m_chirp: float,
-        q: float,
-        r: float,
-        iota: float,
-        t_c: float,
-        phi_c: float,
-        theta: float,
-        phi: float,
-        psi: float,
-    ) -> None: ...
-    def __init__(
-        self,
-        *,
-        m_1: None | float = None,
-        m_2: None | float = None,
-        m_chirp: None | float = None,
-        q: None | float = None,
-        r: float,
-        iota: float,
-        t_c: float,
-        phi_c: float,
-        theta: float,
-        phi: float,
-        psi: float,
-    ) -> None:
-        if m_1 is not None and m_2 is not None:
-            super().__init__(m_1=m_1, m_2=m_2, r=r, iota=iota, t_c=t_c, phi_c=phi_c)
-        elif m_chirp is not None and q is not None:
-            super().__init__(m_chirp=m_chirp, q=q, r=r, iota=iota, t_c=t_c, phi_c=phi_c)
-        else:
-            msg = "Either (m_1 and m_2) or (m_chirp and q) must be provided."
-            raise ValueError(msg)
 
-        self.theta = theta
-        self.phi = phi
-        self.psi = psi
+@dataclass(frozen=True, slots=True)
+class SignalParameters:
+    """
+    Parameters of the gravitational-wave signal as measured by the detector.
+
+    Parameters
+    ----------
+    waveform_parameters
+        Parameters of the gravitational waveform.
+    detector_angles
+        Angles defining the source location and orientation in the detector frame.
+    """
+
+    waveform_parameters: waveform.WaveformParameters
+    detector_angles: DetectorAngles
+
+    @classmethod
+    def from_dict(cls, theta_dict: dict[str, float]) -> SignalParameters:
+        """
+        Create SignalParameters from a dictionary.
+
+        Parameters
+        ----------
+        theta_dict
+            Dictionary containing the signal parameters.
+
+        Returns
+        -------
+        theta
+            Parameters of the gravitational-wave signal as measured by the detector.
+        """
+        waveform_parameters = waveform.WaveformParameters(
+            theta_dict["m_1"],
+            theta_dict["m_2"],
+            theta_dict["r"],
+            theta_dict["iota"],
+            theta_dict["t_c"],
+            theta_dict["phi_c"],
+        )
+        detector_angles = DetectorAngles(theta_dict["theta"], theta_dict["phi"], theta_dict["psi"])
+        return cls(waveform_parameters, detector_angles)
 
 
 @dataclass
@@ -298,8 +269,10 @@ class Interferometer:
         h_tilde
             Frequency-domain strain (Hz^-1).
         """
-        h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, theta)
-        f_plus, f_cross = self.calculate_pattern_functions(theta.theta, theta.phi, theta.psi)
+        h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, theta.waveform_parameters)
+        f_plus, f_cross = self.calculate_pattern_functions(
+            theta.detector_angles.theta, theta.detector_angles.phi, theta.detector_angles.psi
+        )
         return h_tilde_plus * f_plus + h_tilde_cross * f_cross
 
     def calculate_inner_product(

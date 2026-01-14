@@ -1,7 +1,7 @@
 """Module for prior distributions."""
 
 from abc import ABC, abstractmethod
-from typing import Literal, overload
+from typing import Literal
 
 import numpy
 from astropy import cosmology, units
@@ -66,8 +66,39 @@ class Prior(ABC):
         if rng is None:
             rng = numpy.random.default_rng()
 
-        u = rng.uniform(0, 1)
-        return self.calculate_ppf(u)
+        q = rng.uniform(0, 1)
+        return self.calculate_ppf(q)
+
+
+class DeltaFunction(Prior):
+    """
+    Delta-function prior.
+
+    Parameters
+    ----------
+    x_peak
+        Value of the delta function.
+    """
+
+    def __init__(self, x_peak: float) -> None:
+        super().__init__(None)
+        self.x_peak = x_peak
+
+    def calculate_ppf(self, q: float) -> float:
+        """
+        Calculate the percent-point function (inverse cumulative distribution function).
+
+        Parameters
+        ----------
+        q
+            Lower-tail probability.
+
+        Returns
+        -------
+        x
+            Quantile corresponding to the given probability.
+        """
+        return self.x_peak
 
 
 class Uniform(Prior):
@@ -285,119 +316,76 @@ class UniformComovingVolume(Prior):
 
 class Priors:
     """
-    Joint prior distribution on the gravitational-wave signal parameters.
+    Joint prior distribution.
 
     Parameters
     ----------
-    m_1
-        Prior on the mass of the first component in the binary (kg).
-    m_2
-        Prior on the mass of the second component in the binary (kg).
-    r
-        Prior on the luminosity distance to the binary (m).
-    iota
-        Prior on the inclination angle of the binary (rad).
-    t_c
-        Prior on the coalescence time (s).
-    phi_c
-        Prior on the coalescence phase (rad).
-    theta
-        Prior on the polar angle of the binary in the detector frame (rad).
-    phi
-        Prior on the azimuthal angle of the binary in the detector frame (rad).
-    psi
-        Prior on the polarisation angle of the binary in the detector frame (rad).
-
-    Notes
-    -----
-    Instead of `m_1` and `m_2`, priors on the chirp mass `m_chirp` (kg) and mass ratio `q` can be provided.
+    priors
+        Dictionary of parameter names to their prior distributions.
     """
 
-    @overload
-    def __init__(
-        self,
-        *,
-        m_1: Prior | float,
-        m_2: Prior | float,
-        r: Prior | float,
-        iota: Prior | float,
-        t_c: Prior | float,
-        phi_c: Prior | float,
-        theta: Prior | float,
-        phi: Prior | float,
-        psi: Prior | float,
-    ) -> None: ...
-    @overload
-    def __init__(
-        self,
-        *,
-        m_chirp: Prior | float,
-        q: Prior | float,
-        r: Prior | float,
-        iota: Prior | float,
-        t_c: Prior | float,
-        phi_c: Prior | float,
-        theta: Prior | float,
-        phi: Prior | float,
-        psi: Prior | float,
-    ) -> None: ...
-    def __init__(
-        self,
-        *,
-        m_1: None | Prior | float = None,
-        m_2: None | Prior | float = None,
-        m_chirp: None | Prior | float = None,
-        q: None | Prior | float = None,
-        r: Prior | float,
-        iota: Prior | float,
-        t_c: Prior | float,
-        phi_c: Prior | float,
-        theta: Prior | float,
-        phi: Prior | float,
-        psi: Prior | float,
-    ) -> None:
-        if (m_1 is not None and m_2 is not None) or (m_chirp is not None and q is not None):
-            pass
-        else:
-            msg = "Either (m_1 and m_2) or (m_chirp and q) must be provided."
-            raise ValueError(msg)
+    def __init__(self, priors: dict[str, Prior]) -> None:
+        self.names = tuple(priors.keys())
+        self.priors = tuple(priors.values())
 
-        self.m_1 = m_1
-        self.m_2 = m_2
-        self.m_chirp = m_chirp
-        self.q = q
-        self.r = r
-        self.iota = iota
-        self.t_c = t_c
-        self.phi_c = phi_c
-        self.theta = theta
-        self.phi = phi
-        self.psi = psi
+        i: int = 0
 
-        self.theta_name_sample = [name for name, prior in self.__dict__.items() if isinstance(prior, Prior)]
+        sample_names: list[str] = []
+        sample_priors: list[Prior] = []
 
-    def calculate_ppf(self, q: numpy.typing.NDArray[numpy.floating]) -> numpy.typing.NDArray[numpy.floating]:
+        theta_fixed: dict[str, float] = {}
+
+        periodic_indices: list[int] = []
+        reflective_indices: list[int] = []
+
+        for name, prior in zip(self.names, self.priors, strict=False):
+            if isinstance(prior, DeltaFunction):
+                theta_fixed[name] = prior.x_peak
+            else:
+                sample_names.append(name)
+                sample_priors.append(prior)
+                if prior.is_periodic:
+                    periodic_indices.append(i)
+                if prior.is_reflective:
+                    reflective_indices.append(i)
+                i += 1
+
+        self.n_dim = i
+
+        self.sample_names = tuple(sample_names)
+        self.sample_priors = tuple(sample_priors)
+
+        self.theta_fixed = theta_fixed
+
+        self.periodic_indices = periodic_indices if periodic_indices else None
+        self.reflective_indices = reflective_indices if reflective_indices else None
+
+    def prior_transform(self, q: numpy.typing.NDArray[numpy.floating]) -> numpy.typing.NDArray[numpy.floating]:
         """
-        Calculate the percent-point function (inverse cumulative distribution function) of each prior distribution.
+        Transform unit-hypercube samples to samples from the joint prior distribution.
 
         Parameters
         ----------
         q
-            Lower-tail probabilities.
+            Unit-hypercube samples.
 
         Returns
         -------
         x
-            Quantiles corresponding to the given probabilities.
+            Samples from the joint prior distribution.
+
+        Notes
+        -----
+        For independent parameters, the joint prior transform is given by the individual percent-point functions.
+
+        Fixed parameters are not included in the transformation.
         """
         x = q.copy()
-        for i, name in enumerate(self.theta_name_sample):
-            prior = getattr(self, name)
-            assert isinstance(prior, Prior)
+        for i, prior in enumerate(self.sample_priors):
             x[i] = prior.calculate_ppf(q[i])
         return x
 
-    def sample(self, rng: None | numpy.random.Generator = None) -> interferometer.SignalParameters:
+    def sample(self, rng: None | numpy.random.Generator = None) -> dict[str, float]:
         """
         Sample from the joint prior distribution.
 
@@ -409,44 +397,6 @@ class Priors:
         Returns
         -------
         theta
-            Sampled signal parameters.
+            Sampled parameters.
         """
-        theta_dict: dict[str, float] = {}
-        for name, prior in self.__dict__.items():
-            if isinstance(prior, Prior):
-                theta_dict[name] = prior.sample(rng)
-            elif isinstance(prior, int | float):
-                theta_dict[name] = prior
-        return interferometer.SignalParameters(**theta_dict)
-
-    @property
-    def n(self) -> int:
-        """Number of sampled parameters."""
-        return sum(1 for prior in self.__dict__.values() if isinstance(prior, Prior))
-
-    @property
-    def theta_fixed(self) -> dict[str, float]:
-        """Fixed parameters."""
-        return {name: prior for name, prior in self.__dict__.items() if isinstance(prior, int | float)}
-
-    @property
-    def periodic_indices(self) -> None | list[int]:
-        """Indices of the periodic parameters."""
-        indices: list[int] = []
-        for i, name in enumerate(self.theta_name_sample):
-            prior = getattr(self, name)
-            assert isinstance(prior, Prior)
-            if prior.is_periodic:
-                indices.append(i)
-        return indices or None
-
-    @property
-    def reflective_indices(self) -> None | list[int]:
-        """Indices of the reflective parameters."""
-        indices: list[int] = []
-        for i, name in enumerate(self.theta_name_sample):
-            prior = getattr(self, name)
-            assert isinstance(prior, Prior)
-            if prior.is_reflective:
-                indices.append(i)
-        return indices or None
+        return {name: prior.sample(rng) for name, prior in zip(self.names, self.priors, strict=False)}

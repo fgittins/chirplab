@@ -42,63 +42,32 @@ class TestSignalParameters:
 
     def test_initialisation(self) -> None:
         """Test that SignalParameters can be initialised with all required fields."""
-        theta = interferometer.SignalParameters(
-            m_1=30 * constants.M_SUN,
-            m_2=30 * constants.M_SUN,
-            r=500e6 * constants.PC,
-            iota=constants.PI / 3,
-            t_c=100,
-            phi_c=1.5,
-            theta=0,
-            phi=constants.PI / 4,
-            psi=0.5,
+        theta = interferometer.SignalParameters.from_dict(
+            {
+                "m_1": 30 * constants.M_SUN,
+                "m_2": 30 * constants.M_SUN,
+                "r": 500e6 * constants.PC,
+                "iota": constants.PI / 3,
+                "t_c": 100,
+                "phi_c": 1.5,
+                "theta": 0,
+                "phi": constants.PI / 4,
+                "psi": 0.5,
+            }
         )
 
-        assert theta.m_1 == 30 * constants.M_SUN
-        assert theta.m_2 == 30 * constants.M_SUN
-        assert theta.r == 500e6 * constants.PC
-        assert theta.iota == constants.PI / 3
-        assert theta.t_c == 100
-        assert theta.phi_c == 1.5
-        assert theta.theta == 0
-        assert theta.phi == constants.PI / 4
-        assert theta.psi == 0.5
-        assert theta.m_chirp == (theta.m_1 * theta.m_2) ** (3 / 5) / (theta.m_1 + theta.m_2) ** (1 / 5)
-
-    def test_initialisation_with_m_chirp_and_q(self) -> None:
-        """Test that SignalParameters can be initialised with m_chirp and q."""
-        m_chirp = 25 * constants.M_SUN
-        q = 1
-        theta = interferometer.SignalParameters(
-            m_chirp=m_chirp,
-            q=q,
-            r=500e6 * constants.PC,
-            iota=constants.PI / 3,
-            t_c=100,
-            phi_c=1.5,
-            theta=0,
-            phi=constants.PI / 4,
-            psi=0.5,
-        )
-
-        m_1 = m_chirp * (1 + q) ** (1 / 5) / q ** (3 / 5)
-        m_2 = q * m_1
-
-        assert theta.m_1 == m_1
-        assert theta.m_2 == m_2
-
-    def test_initialisation_missing_parameters(self) -> None:
-        """Test that initialisation raises ValueError when required parameters are missing."""
-        with pytest.raises(ValueError, match="Either \\(m_1 and m_2\\) or \\(m_chirp and q\\) must be provided."):
-            interferometer.SignalParameters(  # type: ignore[call-overload]
-                r=500e6 * constants.PC,
-                iota=constants.PI / 3,
-                t_c=100,
-                phi_c=1.5,
-                theta=0,
-                phi=constants.PI / 4,
-                psi=0.5,
-            )
+        assert theta.waveform_parameters.m_1 == 30 * constants.M_SUN
+        assert theta.waveform_parameters.m_2 == 30 * constants.M_SUN
+        assert theta.waveform_parameters.r == 500e6 * constants.PC
+        assert theta.waveform_parameters.iota == constants.PI / 3
+        assert theta.waveform_parameters.t_c == 100
+        assert theta.waveform_parameters.phi_c == 1.5
+        assert theta.detector_angles.theta == 0
+        assert theta.detector_angles.phi == constants.PI / 4
+        assert theta.detector_angles.psi == 0.5
+        assert theta.waveform_parameters.m_chirp == (theta.waveform_parameters.m_1 * theta.waveform_parameters.m_2) ** (
+            3 / 5
+        ) / (theta.waveform_parameters.m_1 + theta.waveform_parameters.m_2) ** (1 / 5)
 
 
 class TestGrid:

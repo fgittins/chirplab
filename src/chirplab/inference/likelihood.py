@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import numpy.typing
+    import numpy
 
     from chirplab.simulation import interferometer, waveform
 

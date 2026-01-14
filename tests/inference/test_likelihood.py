@@ -1,6 +1,5 @@
 """Tests for the likelihood module."""
 
-from dataclasses import replace
 from typing import TYPE_CHECKING
 
 import numpy
@@ -89,7 +88,19 @@ class TestLikelihood:
     ) -> None:
         """Test log-likelihood with incorrect signal parameters."""
         like = likelihood.Likelihood(injected_interferometer_zero_noise_default, model_default)
-        theta_wrong = replace(theta_default, m_1=20 * constants.M_SUN, m_2=20 * constants.M_SUN, r=2 * theta_default.r)
+        theta_wrong = interferometer.SignalParameters.from_dict(
+            {
+                "m_1": 20 * constants.M_SUN,
+                "m_2": 20 * constants.M_SUN,
+                "r": 2 * theta_default.waveform_parameters.r,
+                "iota": theta_default.waveform_parameters.iota,
+                "t_c": theta_default.waveform_parameters.t_c,
+                "phi_c": theta_default.waveform_parameters.phi_c,
+                "theta": theta_default.detector_angles.theta,
+                "phi": theta_default.detector_angles.phi,
+                "psi": theta_default.detector_angles.psi,
+            }
+        )
         ln_l_true = like.calculate_log_pdf(theta_default)
         ln_l_wrong = like.calculate_log_pdf(theta_wrong)
 

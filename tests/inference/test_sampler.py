@@ -18,15 +18,17 @@ if TYPE_CHECKING:
 def priors_default() -> prior.Priors:
     """Return default priors for testing."""
     return prior.Priors(
-        m_1=prior.Uniform(20 * constants.M_SUN, 40 * constants.M_SUN),
-        m_2=prior.Uniform(20 * constants.M_SUN, 40 * constants.M_SUN),
-        r=prior.Uniform(400e6 * constants.PC, 600e6 * constants.PC),
-        iota=prior.Sine(),
-        t_c=prior.Uniform(99, 101),
-        phi_c=prior.Uniform(0, 2 * constants.PI, boundary="periodic"),
-        theta=prior.Cosine(),
-        phi=prior.Uniform(0, 2 * constants.PI, boundary="periodic"),
-        psi=prior.Uniform(0, constants.PI),
+        {
+            "m_1": prior.Uniform(20 * constants.M_SUN, 40 * constants.M_SUN),
+            "m_2": prior.Uniform(20 * constants.M_SUN, 40 * constants.M_SUN),
+            "r": prior.Uniform(400e6 * constants.PC, 600e6 * constants.PC),
+            "iota": prior.Sine(),
+            "t_c": prior.Uniform(99, 101),
+            "phi_c": prior.Uniform(0, 2 * constants.PI, boundary="periodic"),
+            "theta": prior.Sine(),
+            "phi": prior.Uniform(0, 2 * constants.PI, boundary="periodic"),
+            "psi": prior.Uniform(0, constants.PI),
+        }
     )
 
 
@@ -77,15 +79,21 @@ class TestNestedSampler:
         theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test that calculate_log_likelihood returns a float."""
-        x = numpy.array([theta_default.m_1, theta_default.m_2, theta_default.r])
+        x = numpy.array(
+            [
+                theta_default.waveform_parameters.m_1,
+                theta_default.waveform_parameters.m_2,
+                theta_default.waveform_parameters.r,
+            ]
+        )
         theta_name_sample = ["m_1", "m_2", "r"]
         theta_fixed = {
-            "iota": theta_default.iota,
-            "t_c": theta_default.t_c,
-            "phi_c": theta_default.phi_c,
-            "theta": theta_default.theta,
-            "phi": theta_default.phi,
-            "psi": theta_default.psi,
+            "iota": theta_default.waveform_parameters.iota,
+            "t_c": theta_default.waveform_parameters.t_c,
+            "phi_c": theta_default.waveform_parameters.phi_c,
+            "theta": theta_default.detector_angles.theta,
+            "phi": theta_default.detector_angles.phi,
+            "psi": theta_default.detector_angles.psi,
         }
         ln_l = sampler.NestedSampler.calculate_log_likelihood(x, likelihood_default, theta_name_sample, theta_fixed)
 
@@ -98,15 +106,21 @@ class TestNestedSampler:
         theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test that calculate_log_likelihood returns finite values."""
-        x = numpy.array([theta_default.m_1, theta_default.m_2, theta_default.r])
+        x = numpy.array(
+            [
+                theta_default.waveform_parameters.m_1,
+                theta_default.waveform_parameters.m_2,
+                theta_default.waveform_parameters.r,
+            ]
+        )
         theta_name_sample = ["m_1", "m_2", "r"]
         theta_fixed = {
-            "iota": theta_default.iota,
-            "t_c": theta_default.t_c,
-            "phi_c": theta_default.phi_c,
-            "theta": theta_default.theta,
-            "phi": theta_default.phi,
-            "psi": theta_default.psi,
+            "iota": theta_default.waveform_parameters.iota,
+            "t_c": theta_default.waveform_parameters.t_c,
+            "phi_c": theta_default.waveform_parameters.phi_c,
+            "theta": theta_default.detector_angles.theta,
+            "phi": theta_default.detector_angles.phi,
+            "psi": theta_default.detector_angles.psi,
         }
         ln_l = sampler.NestedSampler.calculate_log_likelihood(x, likelihood_default, theta_name_sample, theta_fixed)
 
@@ -119,16 +133,16 @@ class TestNestedSampler:
         theta_default: interferometer.SignalParameters,
     ) -> None:
         """Test that calculate_log_likelihood correctly assembles sampled and fixed parameters."""
-        x = numpy.array([theta_default.m_1, theta_default.m_2])
+        x = numpy.array([theta_default.waveform_parameters.m_1, theta_default.waveform_parameters.m_2])
         theta_name_sample = ["m_1", "m_2"]
         theta_fixed = {
-            "r": theta_default.r,
-            "iota": theta_default.iota,
-            "t_c": theta_default.t_c,
-            "phi_c": theta_default.phi_c,
-            "theta": theta_default.theta,
-            "phi": theta_default.phi,
-            "psi": theta_default.psi,
+            "r": theta_default.waveform_parameters.r,
+            "iota": theta_default.waveform_parameters.iota,
+            "t_c": theta_default.waveform_parameters.t_c,
+            "phi_c": theta_default.waveform_parameters.phi_c,
+            "theta": theta_default.detector_angles.theta,
+            "phi": theta_default.detector_angles.phi,
+            "psi": theta_default.detector_angles.psi,
         }
         ln_l_static = sampler.NestedSampler.calculate_log_likelihood(
             x, likelihood_default, theta_name_sample, theta_fixed
@@ -145,7 +159,7 @@ class TestNestedSampler:
     ) -> None:
         """Test that run_nested executes without errors."""
         samp = sampler.NestedSampler(likelihood_default, priors_default, rng_default)
-        samp.run_nested(delta_ln_z=400)
+        samp.run_nested(delta_ln_z=600)
 
         assert samp.results is not None
 
@@ -159,7 +173,7 @@ class TestNestedSampler:
         """Test that NestedSampler can be restored from a checkpoint file."""
         samp = sampler.NestedSampler(likelihood_default, priors_default, rng_default)
         checkpoint_file = tmp_path / "checkpoint.save"
-        samp.run_nested(delta_ln_z=400, add_live=False, checkpoint_file=str(checkpoint_file))
+        samp.run_nested(delta_ln_z=600, add_live=False, checkpoint_file=str(checkpoint_file))
         samp_restored = sampler.NestedSampler.restore(str(checkpoint_file))
 
         assert samp_restored.sampler is not None

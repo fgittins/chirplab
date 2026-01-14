@@ -92,8 +92,8 @@ class NestedSampler:
 
         self.sampler: dynesty.sampler.Sampler = dynesty.NestedSampler(
             self.calculate_log_likelihood,
-            priors.calculate_ppf,
-            priors.n,
+            priors.prior_transform,
+            priors.n_dim,
             nlive=nlive,
             bound=bound,
             sample=sample,
@@ -106,7 +106,7 @@ class NestedSampler:
             pool=None,
             use_pool=None,
             live_points=None,
-            logl_args=(likelihood, priors.theta_name_sample, priors.theta_fixed),
+            logl_args=(likelihood, priors.sample_names, priors.theta_fixed),
             enlarge=enlarge,
             bootstrap=bootstrap,
             walks=walks,
@@ -199,7 +199,7 @@ class NestedSampler:
     def calculate_log_likelihood(
         x: numpy.typing.NDArray[numpy.floating],
         likelihood: likelihood.Likelihood,
-        theta_name_sample: list[str],
+        sample_names: list[str],
         theta_fixed: dict[str, float],
     ) -> numpy.float64:
         """
@@ -211,7 +211,7 @@ class NestedSampler:
             Sampled parameters.
         likelihood
             Likelihood function for gravitational-wave signals.
-        theta_name_sample
+        sample_names
             Names of sampled parameters.
         theta_fixed
             Fixed parameters.
@@ -221,8 +221,9 @@ class NestedSampler:
         log_likelihood
             Log of the likelihood function.
         """
-        theta_sampled = dict(zip(theta_name_sample, x, strict=False))
-        theta = interferometer.SignalParameters(**theta_sampled, **theta_fixed)
+        theta_sample = dict(zip(sample_names, x, strict=False))
+        theta_dict = {**theta_sample, **theta_fixed}
+        theta = interferometer.SignalParameters.from_dict(theta_dict)
         return likelihood.calculate_log_pdf(theta)
 
 
@@ -248,10 +249,11 @@ def benchmark(
     t
         Average time per log-likelihood evaluation (s).
     """
-    theta_list = [priors.sample(rng) for _ in range(n)]
+    theta_dict_list = [priors.sample(rng) for _ in range(n)]
 
     t_i = time.time()
-    for theta in theta_list:
+    for theta_dict in theta_dict_list:
+        theta = interferometer.SignalParameters.from_dict(theta_dict)
         likelihood.calculate_log_pdf(theta)
     t_f = time.time()
 
