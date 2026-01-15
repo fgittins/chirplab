@@ -12,6 +12,23 @@ if TYPE_CHECKING:
     from chirplab.simulation import waveform
 
 
+def vector_to_parameters(x: numpy.typing.NDArray[numpy.floating]) -> interferometer.SignalParameters:
+    """Convert a vector to signal parameters."""
+    return interferometer.SignalParameters.from_dict(
+        {
+            "m_1": x[0],
+            "m_2": x[1],
+            "r": x[2],
+            "iota": x[3],
+            "t_c": x[4],
+            "phi_c": x[5],
+            "theta": x[6],
+            "phi": x[7],
+            "psi": x[8],
+        }
+    )
+
+
 @pytest.fixture(scope="session")
 def injected_interferometer_default(
     grid_default: interferometer.Grid,
@@ -28,6 +45,6 @@ def injected_interferometer_default(
 @pytest.fixture(scope="session")
 def likelihood_default(
     injected_interferometer_default: interferometer.Interferometer, model_default: waveform.WaveformModel
-) -> likelihood.Likelihood:
+) -> likelihood.GravitationalWaveLikelihood:
     """Return default likelihood object for testing."""
-    return likelihood.Likelihood(injected_interferometer_default, model_default)
+    return likelihood.GravitationalWaveLikelihood(injected_interferometer_default, model_default, vector_to_parameters)

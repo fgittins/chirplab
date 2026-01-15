@@ -8,9 +8,28 @@ import pytest
 from chirplab import constants
 from chirplab.inference import likelihood
 from chirplab.simulation import interferometer
+from tests.inference.conftest import vector_to_parameters
 
 if TYPE_CHECKING:
     from chirplab.simulation import waveform
+
+
+@pytest.fixture(scope="session")
+def x_default() -> numpy.typing.NDArray[numpy.floating]:
+    """Return default parameter vector for testing."""
+    return numpy.array(
+        [
+            30 * constants.M_SUN,
+            30 * constants.M_SUN,
+            500e6 * constants.PC,
+            constants.PI / 3,
+            100,
+            1.5,
+            0,
+            constants.PI / 4,
+            0.5,
+        ]
+    )
 
 
 @pytest.fixture(scope="session")
@@ -32,18 +51,20 @@ class TestLikelihood:
         self, model_default: waveform.WaveformModel, injected_interferometer_default: interferometer.Interferometer
     ) -> None:
         """Test that Likelihood can be initialised with an interferometer and waveform model."""
-        like = likelihood.Likelihood(injected_interferometer_default, model_default)
+        like = likelihood.GravitationalWaveLikelihood(
+            injected_interferometer_default, model_default, vector_to_parameters
+        )
 
         assert like.interferometer == injected_interferometer_default
         assert like.model == model_default
 
-    def test_log_likelihood_noise_is_real(self, likelihood_default: likelihood.Likelihood) -> None:
+    def test_log_likelihood_noise_is_real(self, likelihood_default: likelihood.GravitationalWaveLikelihood) -> None:
         """Test that the noise log-likelihood is a real number."""
         ln_l_noise = likelihood_default.ln_l_noise
 
         assert isinstance(ln_l_noise, (float, numpy.floating))
 
-    def test_log_likelihood_noise_consistency(self, likelihood_default: likelihood.Likelihood) -> None:
+    def test_log_likelihood_noise_consistency(self, likelihood_default: likelihood.GravitationalWaveLikelihood) -> None:
         """Test that repeated calls to ln_l_noise property return the same value."""
         ln_l_noise_1 = likelihood_default.ln_l_noise
         ln_l_noise_2 = likelihood_default.ln_l_noise
@@ -51,10 +72,12 @@ class TestLikelihood:
         assert ln_l_noise_1 == ln_l_noise_2
 
     def test_calculate_log_pdf_returns_real(
-        self, likelihood_default: likelihood.Likelihood, theta_default: interferometer.SignalParameters
+        self,
+        likelihood_default: likelihood.GravitationalWaveLikelihood,
+        x_default: numpy.typing.NDArray[numpy.floating],
     ) -> None:
         """Test that calculate_log_pdf returns a real number."""
-        ln_l = likelihood_default.calculate_log_pdf(theta_default)
+        ln_l = likelihood_default.calculate_log_pdf(x_default)
 
         assert isinstance(ln_l, (float, numpy.floating))
 
@@ -62,20 +85,24 @@ class TestLikelihood:
         self,
         injected_interferometer_zero_noise_default: interferometer.Interferometer,
         model_default: waveform.WaveformModel,
-        theta_default: interferometer.SignalParameters,
+        x_default: numpy.typing.NDArray[numpy.floating],
     ) -> None:
         """Test log-likelihood calculation with zero noise."""
-        like = likelihood.Likelihood(injected_interferometer_zero_noise_default, model_default)
-        ln_l = like.calculate_log_pdf(theta_default)
+        like = likelihood.GravitationalWaveLikelihood(
+            injected_interferometer_zero_noise_default, model_default, vector_to_parameters
+        )
+        ln_l = like.calculate_log_pdf(x_default)
 
         assert not numpy.isnan(ln_l)
         assert not numpy.isinf(ln_l)
 
     def test_calculate_log_pdf_with_noise(
-        self, likelihood_default: likelihood.Likelihood, theta_default: interferometer.SignalParameters
+        self,
+        likelihood_default: likelihood.GravitationalWaveLikelihood,
+        x_default: numpy.typing.NDArray[numpy.floating],
     ) -> None:
         """Test log-likelihood calculation with noise."""
-        ln_l = likelihood_default.calculate_log_pdf(theta_default)
+        ln_l = likelihood_default.calculate_log_pdf(x_default)
 
         assert not numpy.isnan(ln_l)
         assert not numpy.isinf(ln_l)
@@ -84,24 +111,17 @@ class TestLikelihood:
         self,
         injected_interferometer_zero_noise_default: interferometer.Interferometer,
         model_default: waveform.WaveformModel,
-        theta_default: interferometer.SignalParameters,
+        x_default: numpy.typing.NDArray[numpy.floating],
     ) -> None:
         """Test log-likelihood with incorrect signal parameters."""
-        like = likelihood.Likelihood(injected_interferometer_zero_noise_default, model_default)
-        theta_wrong = interferometer.SignalParameters.from_dict(
-            {
-                "m_1": 20 * constants.M_SUN,
-                "m_2": 20 * constants.M_SUN,
-                "r": 2 * theta_default.waveform_parameters.r,
-                "iota": theta_default.waveform_parameters.iota,
-                "t_c": theta_default.waveform_parameters.t_c,
-                "phi_c": theta_default.waveform_parameters.phi_c,
-                "theta": theta_default.detector_angles.theta,
-                "phi": theta_default.detector_angles.phi,
-                "psi": theta_default.detector_angles.psi,
-            }
+        like = likelihood.GravitationalWaveLikelihood(
+            injected_interferometer_zero_noise_default, model_default, vector_to_parameters
         )
-        ln_l_true = like.calculate_log_pdf(theta_default)
-        ln_l_wrong = like.calculate_log_pdf(theta_wrong)
+        x_wrong = x_default.copy()
+        x_wrong[0] = 20 * constants.M_SUN
+        x_wrong[1] = 20 * constants.M_SUN
+        x_wrong[2] = 2 * x_default[2]
+        ln_l_true = like.calculate_log_pdf(x_default)
+        ln_l_wrong = like.calculate_log_pdf(x_wrong)
 
         assert ln_l_true > ln_l_wrong

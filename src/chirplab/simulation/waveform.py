@@ -50,7 +50,7 @@ class WaveformParameters:
 
 class WaveformModel(ABC):
     """
-    Gravitational-waveform model base class.
+    Gravitational-waveform model.
 
     Parameters
     ----------

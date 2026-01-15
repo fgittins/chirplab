@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING, Literal, TypedDict
 import dynesty
 import numpy
 
-from chirplab.simulation import interferometer
-
 if TYPE_CHECKING:
     from dynesty import internal_samplers
 
@@ -29,14 +27,14 @@ class FirstUpdateDict(TypedDict, total=False):
 
 class NestedSampler:
     """
-    Nested sampler of gravitational-wave signals.
+    Nested sampler.
 
     Parameters
     ----------
     likelihood
-        Likelihood function for gravitational-wave signals.
-    priors
-        Joint prior distribution on the gravitational-wave signal parameters.
+        Likelihood function.
+    prior
+        Prior distribution.
     rng
         Random number generator for the sampling.
     nlive
@@ -71,7 +69,7 @@ class NestedSampler:
     def __init__(
         self,
         likelihood: likelihood.Likelihood,
-        priors: prior.Priors,
+        prior: prior.Prior,
         rng: None | numpy.random.Generator = None,
         nlive: int = 500,
         bound: BOUNDARY_TYPES = "multi",
@@ -86,19 +84,19 @@ class NestedSampler:
         ncdim: None | int = None,
         history_filename: None | str = None,
     ) -> None:
-        self.t_eval: None | float = benchmark(likelihood, priors, rng=rng)
+        self.t_eval: None | float = benchmark(likelihood, prior, rng=rng)
 
         self.is_restored = False
 
         self.sampler: dynesty.sampler.Sampler = dynesty.NestedSampler(
-            self.calculate_log_likelihood,
-            priors.prior_transform,
-            priors.n_dim,
+            likelihood.calculate_log_pdf,
+            prior.transform,
+            prior.n_dim,
             nlive=nlive,
             bound=bound,
             sample=sample,
-            periodic=priors.periodic_indices,
-            reflective=priors.reflective_indices,
+            periodic=prior.periodic_indices,
+            reflective=prior.reflective_indices,
             update_interval=update_interval,
             first_update=first_update,
             rstate=rng,
@@ -106,7 +104,6 @@ class NestedSampler:
             pool=None,
             use_pool=None,
             live_points=None,
-            logl_args=(likelihood, priors.sample_names, priors.theta_fixed),
             enlarge=enlarge,
             bootstrap=bootstrap,
             walks=walks,
@@ -195,40 +192,9 @@ class NestedSampler:
         """Results of the nested sampling run."""
         return self.sampler.results
 
-    @staticmethod
-    def calculate_log_likelihood(
-        x: numpy.typing.NDArray[numpy.floating],
-        likelihood: likelihood.Likelihood,
-        sample_names: list[str],
-        theta_fixed: dict[str, float],
-    ) -> numpy.float64:
-        """
-        Calculate log of the likelihood function.
-
-        Parameters
-        ----------
-        x
-            Sampled parameters.
-        likelihood
-            Likelihood function for gravitational-wave signals.
-        sample_names
-            Names of sampled parameters.
-        theta_fixed
-            Fixed parameters.
-
-        Returns
-        -------
-        log_likelihood
-            Log of the likelihood function.
-        """
-        theta_sample = dict(zip(sample_names, x, strict=False))
-        theta_dict = {**theta_sample, **theta_fixed}
-        theta = interferometer.SignalParameters.from_dict(theta_dict)
-        return likelihood.calculate_log_pdf(theta)
-
 
 def benchmark(
-    likelihood: likelihood.Likelihood, priors: prior.Priors, n: int = 1_000, rng: None | numpy.random.Generator = None
+    likelihood: likelihood.Likelihood, prior: prior.Prior, n: int = 1_000, rng: None | numpy.random.Generator = None
 ) -> float:
     """
     Benchmark the log of the likelihood function evaluation time.
@@ -236,9 +202,9 @@ def benchmark(
     Parameters
     ----------
     likelihood
-        Likelihood function for gravitational-wave signals.
-    priors
-        Joint prior distribution on the gravitational-wave signal parameters.
+        Likelihood function.
+    prior
+        Prior distribution.
     n
         Number of evaluations to average over.
     rng
@@ -249,12 +215,11 @@ def benchmark(
     t
         Average time per log-likelihood evaluation (s).
     """
-    theta_dict_list = [priors.sample(rng) for _ in range(n)]
+    x_list = [prior.sample(rng) for _ in range(n)]
 
     t_i = time.time()
-    for theta_dict in theta_dict_list:
-        theta = interferometer.SignalParameters.from_dict(theta_dict)
-        likelihood.calculate_log_pdf(theta)
+    for x in x_list:
+        likelihood.calculate_log_pdf(x)
     t_f = time.time()
 
     return (t_f - t_i) / n
