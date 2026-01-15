@@ -164,7 +164,8 @@ class NestedSampler:
             checkpoint_every=checkpoint_every,
             resume=self.is_restored,
         )
-        print()
+        if print_progress:
+            print()
 
     @classmethod
     def restore(cls, filename: str) -> NestedSampler:
