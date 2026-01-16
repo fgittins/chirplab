@@ -18,8 +18,8 @@ def theta_default() -> interferometer.SignalParameters:
             "iota": constants.PI / 3,
             "t_c": 100,
             "phi_c": 1.5,
-            "theta": 0,
-            "phi": constants.PI / 4,
+            "alpha": constants.PI / 4,
+            "delta": constants.PI / 2,
             "psi": 0.5,
         }
     )

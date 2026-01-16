@@ -22,8 +22,8 @@ def vector_to_parameters(x: numpy.typing.NDArray[numpy.floating]) -> interferome
             "iota": x[3],
             "t_c": x[4],
             "phi_c": x[5],
-            "theta": x[6],
-            "phi": x[7],
+            "alpha": x[6],
+            "delta": x[7],
             "psi": x[8],
         }
     )
@@ -37,7 +37,7 @@ def injected_interferometer_default(
 ) -> interferometer.Interferometer:
     """Return default injected interferometer for testing."""
     rng = numpy.random.default_rng(42)
-    ifo = interferometer.LIGO(grid_default, rng=rng)
+    ifo = interferometer.LLO(grid_default, rng=rng)
     ifo.inject_signal(model_default, theta_default)
     return ifo
 

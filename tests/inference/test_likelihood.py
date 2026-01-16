@@ -25,8 +25,8 @@ def x_default() -> numpy.typing.NDArray[numpy.floating]:
             constants.PI / 3,
             100,
             1.5,
-            0,
             constants.PI / 4,
+            constants.PI / 2,
             0.5,
         ]
     )
@@ -39,7 +39,7 @@ def injected_interferometer_zero_noise_default(
     theta_default: interferometer.SignalParameters,
 ) -> interferometer.Interferometer:
     """Return default injected interferometer with zero noise for testing."""
-    ifo = interferometer.LIGO(grid_default, is_zero_noise=True)
+    ifo = interferometer.LLO(grid_default, is_zero_noise=True)
     ifo.inject_signal(model_default, theta_default)
     return ifo
 

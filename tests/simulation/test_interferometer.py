@@ -50,8 +50,8 @@ class TestSignalParameters:
                 "iota": constants.PI / 3,
                 "t_c": 100,
                 "phi_c": 1.5,
-                "theta": 0,
-                "phi": constants.PI / 4,
+                "alpha": constants.PI / 4,
+                "delta": constants.PI / 2,
                 "psi": 0.5,
             }
         )
@@ -245,9 +245,9 @@ class TestInterferometer:
     @pytest.mark.parametrize(
         ("theta", "phi", "psi", "f_plus_expected", "f_cross_expected"),
         [
-            (0, 0, 0, 1, 0),
-            (constants.PI / 2, 0, 0, 1 / 2, 0),
-            (0, constants.PI / 2, 0, -1, 0),
+            (0, 0, 0, -1, 0),
+            (constants.PI / 2, 0, 0, -1 / 2, 0),
+            (0, constants.PI / 2, 0, 1, 0),
             (0, 0, constants.PI / 4, 0, 1),
             (constants.PI / 2, 0, constants.PI / 4, 0, 1 / 2),
             (0, constants.PI / 2, constants.PI / 4, 0, -1),
@@ -260,21 +260,28 @@ class TestInterferometer:
         psi: float,
         f_plus_expected: float,
         f_cross_expected: float,
+        interferometer_default: interferometer.Interferometer,
     ) -> None:
         """Test pattern function calculations for various angles."""
-        f_plus, f_cross = interferometer.Interferometer.calculate_pattern_functions(theta, phi, psi)
+        gmst = 0
+        alpha = phi - gmst
+        delta = constants.PI / 2 - theta
+        f_plus, f_cross = interferometer_default.calculate_pattern_functions(alpha, delta, psi, gmst)
 
         assert numpy.isclose(f_plus_expected, f_plus)
         assert numpy.isclose(f_cross_expected, f_cross)
 
-    def test_pattern_functions_polarisation(self) -> None:
+    def test_pattern_functions_polarisation(self, interferometer_default: interferometer.Interferometer) -> None:
         """Test that pattern functions rotate correctly with polarisation angle."""
         theta, phi = constants.PI / 4, constants.PI / 6
-        f_plus_0, f_cross_0 = interferometer.Interferometer.calculate_pattern_functions(theta, phi, 0)
-        f_plus_45, f_cross_45 = interferometer.Interferometer.calculate_pattern_functions(theta, phi, constants.PI / 4)
+        gmst = 0
+        alpha = phi - gmst
+        delta = constants.PI / 2 - theta
+        f_plus_0, f_cross_0 = interferometer_default.calculate_pattern_functions(alpha, delta, 0, gmst)
+        f_plus_45, f_cross_45 = interferometer_default.calculate_pattern_functions(alpha, delta, constants.PI / 4, gmst)
 
-        assert numpy.isclose(f_plus_0, f_cross_45)
-        assert numpy.isclose(f_cross_0, -f_plus_45)
+        assert numpy.isclose(f_plus_0, -f_cross_45)
+        assert numpy.isclose(f_cross_0, f_plus_45)
 
     def test_inner_product_orthogonality(self, interferometer_default: interferometer.Interferometer) -> None:
         """Test that inner product of orthogonal signals is zero."""
@@ -336,43 +343,28 @@ class TestInterferometer:
         assert numpy.isclose(rho_opt, abs(rho_mf))
 
 
-class TestLIGO:
-    """Tests for the LIGO class."""
+class TestLLO:
+    """Tests for the LLO class."""
 
     def test_initialisation(self, grid_default: interferometer.Grid) -> None:
-        """Test that LIGO can be initialised."""
-        ligo = interferometer.LIGO(grid_default)
+        """Test that LLO can be initialised."""
+        llo = interferometer.LLO(grid_default)
 
-        assert ligo.grid == grid_default
-        assert 20 <= ligo.f.min()
-        assert ligo.f.max() <= 2048
+        assert llo.grid == grid_default
+        assert 20 <= llo.f.min()
+        assert llo.f.max() <= 2048
 
-    def test_frequency_band(self, grid_default: interferometer.Grid) -> None:
-        """Test that LIGO has correct frequency band."""
-        ligo = interferometer.LIGO(grid_default)
 
-        assert numpy.all(20 <= ligo.f)
-        assert numpy.all(ligo.f <= 2048)
+class TestLHO:
+    """Tests for the LHO class."""
 
-    def test_noise_generation(self, grid_default: interferometer.Grid, rng_default: numpy.random.Generator) -> None:
-        """Test that LIGO generates noise correctly."""
-        ligo = interferometer.LIGO(grid_default, rng=rng_default)
+    def test_initialisation(self, grid_default: interferometer.Grid) -> None:
+        """Test that LHO can be initialised."""
+        lho = interferometer.LHO(grid_default)
 
-        assert not numpy.allclose(ligo.d_tilde, 0, RTOL, ATOL)
-
-    def test_inject_signal(
-        self,
-        grid_default: interferometer.Grid,
-        model_default: waveform.WaveformModel,
-        theta_default: interferometer.SignalParameters,
-    ) -> None:
-        """Test signal injection into LIGO."""
-        ligo = interferometer.LIGO(grid_default)
-        h_tilde, rho_opt, rho_mf = ligo.inject_signal(model_default, theta_default)
-
-        assert not numpy.allclose(h_tilde, 0, RTOL, ATOL)
-        assert rho_opt > 0
-        assert rho_mf > 0
+        assert lho.grid == grid_default
+        assert 20 <= lho.f.min()
+        assert lho.f.max() <= 2048
 
 
 class TestCalculateInnerProduct:
