@@ -1,5 +1,5 @@
 from collections.abc import Callable, Iterable
-from typing import Any, Concatenate, Literal
+from typing import Any, Concatenate, Literal, Self
 
 import numpy
 from dynesty import internal_samplers, sampler
@@ -25,7 +25,7 @@ class NestedSampler(sampler.Sampler):
         queue_size: None | int = None,
         pool: Any = None,
         use_pool: None | sampler.UsePoolDict = None,
-        live_points: None | list[numpy.typing.NDArray[numpy.floating]] = None,
+        live_points: None | list[numpy.typing.NDArray[numpy.floating] | float] = None,
         logl_args: None | Iterable[Any] = None,
         logl_kwargs: None | dict[str, Any] = None,
         ptform_args: None | Iterable[Any] = None,
@@ -39,4 +39,6 @@ class NestedSampler(sampler.Sampler):
         blob: bool = False,
         save_evaluation_history: bool = False,
         history_filename: None | str = None,
-    ) -> NestedSampler: ...
+    ) -> Self: ...
+    @classmethod
+    def restore(cls, fname: str, pool: Any | None = None) -> Self: ...

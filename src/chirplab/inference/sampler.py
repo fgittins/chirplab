@@ -1,7 +1,7 @@
 """Module for sampling algorithms."""
 
 import time
-from typing import TYPE_CHECKING, Literal, TypedDict
+from typing import TYPE_CHECKING, Literal, Self, TypedDict
 
 import dynesty
 import numpy
@@ -88,7 +88,7 @@ class NestedSampler:
 
         self.is_restored = False
 
-        self.sampler: dynesty.sampler.Sampler = dynesty.NestedSampler(
+        self.sampler = dynesty.NestedSampler(
             likelihood.calculate_log_pdf,
             prior.transform,
             prior.n_dim,
@@ -168,7 +168,7 @@ class NestedSampler:
             print()
 
     @classmethod
-    def restore(cls, filename: str) -> NestedSampler:
+    def restore(cls, filename: str) -> Self:
         """
         Restore the nested sampler from a checkpoint file.
 

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
+from typing import Final, Self
 
 import numpy
 
@@ -69,7 +69,7 @@ class SignalParameters:
     detector_angles: DetectorAngles
 
     @classmethod
-    def from_dict(cls, theta_dict: dict[str, float]) -> SignalParameters:
+    def from_dict(cls, theta_dict: dict[str, float]) -> Self:
         """
         Create SignalParameters from a dictionary.
 
