@@ -11,7 +11,7 @@ from chirplab.simulation import interferometer
 from tests.inference.conftest import vector_to_parameters
 
 if TYPE_CHECKING:
-    from chirplab.simulation import waveform
+    from chirplab.simulation import grid, parameters, waveform
 
 
 @pytest.fixture(scope="session")
@@ -34,9 +34,9 @@ def x_default() -> numpy.typing.NDArray[numpy.floating]:
 
 @pytest.fixture(scope="session")
 def injected_interferometer_zero_noise_default(
-    grid_default: interferometer.Grid,
+    grid_default: grid.Grid,
     model_default: waveform.WaveformModel,
-    theta_default: interferometer.SignalParameters,
+    theta_default: parameters.SignalParameters,
 ) -> interferometer.Interferometer:
     """Return default injected interferometer with zero noise for testing."""
     ifo = interferometer.LLO(grid_default, is_zero_noise=True)

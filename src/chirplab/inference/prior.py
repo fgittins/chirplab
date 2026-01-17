@@ -1,4 +1,4 @@
-"""Module for prior distributions."""
+"""Module for prior distribution."""
 
 from typing import TYPE_CHECKING
 

@@ -6,15 +6,15 @@ import numpy
 import pytest
 
 from chirplab.inference import likelihood
-from chirplab.simulation import interferometer
+from chirplab.simulation import interferometer, parameters
 
 if TYPE_CHECKING:
-    from chirplab.simulation import waveform
+    from chirplab.simulation import grid, waveform
 
 
-def vector_to_parameters(x: numpy.typing.NDArray[numpy.floating]) -> interferometer.SignalParameters:
+def vector_to_parameters(x: numpy.typing.NDArray[numpy.floating]) -> parameters.SignalParameters:
     """Convert a vector to signal parameters."""
-    return interferometer.SignalParameters.from_dict(
+    return parameters.SignalParameters.from_dict(
         {
             "m_1": x[0],
             "m_2": x[1],
@@ -31,9 +31,9 @@ def vector_to_parameters(x: numpy.typing.NDArray[numpy.floating]) -> interferome
 
 @pytest.fixture(scope="session")
 def injected_interferometer_default(
-    grid_default: interferometer.Grid,
+    grid_default: grid.Grid,
     model_default: waveform.WaveformModel,
-    theta_default: interferometer.SignalParameters,
+    theta_default: parameters.SignalParameters,
 ) -> interferometer.Interferometer:
     """Return default injected interferometer for testing."""
     rng = numpy.random.default_rng(42)

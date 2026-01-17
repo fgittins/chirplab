@@ -1,183 +1,22 @@
-"""Module for interferometer response to gravitational-wave signals."""
+"""Module for gravitational-wave interferometers."""
 
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, Self
+from typing import TYPE_CHECKING, Final
 
 import numpy
 
 from chirplab import constants
-from chirplab.simulation import waveform
 
-# TODO: add multiple interferometers
-# TODO: revisit calculation of polarisation tensor and conventions
-# TODO: set gmst properly
+if TYPE_CHECKING:
+    from chirplab.simulation import grid, parameters, waveform
+
+# TODO: add multiple interferometers in a network
 
 GEOCENTRE: Final[numpy.typing.NDArray[numpy.float64]] = numpy.array([0, 0, 0], dtype=numpy.float64)
-D: Final[numpy.typing.NDArray[numpy.float64]] = (
-    1 / 2 * numpy.array([[1, 0, 0], [0, -1, 0], [0, 0, 0]], dtype=numpy.float64)
-)
-
-
-@dataclass(frozen=True, slots=True)
-class DetectorAngles:
-    """
-    Angles defining the source location and orientation in the detector frame.
-
-    Parameters
-    ----------
-    alpha
-        Right ascension of the binary in the detector frame (rad).
-    delta
-        Declination of the binary in the detector frame (rad).
-    psi
-        Polarisation angle of the binary in the detector frame (rad).
-    gmst
-        Greenwich mean sidereal time (rad).
-    """
-
-    alpha: float
-    delta: float
-    psi: float
-    gmst: float = 0
-
-    @property
-    def theta(self) -> float:
-        """Polar angle of the binary in the detector frame (rad)."""
-        return constants.PI / 2 - self.delta
-
-    @property
-    def phi(self) -> float:
-        """Azimuthal angle of the binary in the detector frame (rad)."""
-        return self.alpha - self.gmst
-
-
-@dataclass(frozen=True, slots=True)
-class SignalParameters:
-    """
-    Parameters of the gravitational-wave signal as measured by the detector.
-
-    Parameters
-    ----------
-    waveform_parameters
-        Parameters of the gravitational waveform.
-    detector_angles
-        Angles defining the source location and orientation in the detector frame.
-    """
-
-    waveform_parameters: waveform.WaveformParameters
-    detector_angles: DetectorAngles
-
-    @classmethod
-    def from_dict(cls, theta_dict: dict[str, float]) -> Self:
-        """
-        Create SignalParameters from a dictionary.
-
-        Parameters
-        ----------
-        theta_dict
-            Dictionary containing the signal parameters.
-
-        Returns
-        -------
-        theta
-            Parameters of the gravitational-wave signal as measured by the detector.
-        """
-        waveform_parameters = waveform.WaveformParameters(
-            theta_dict["m_1"],
-            theta_dict["m_2"],
-            theta_dict["r"],
-            theta_dict["iota"],
-            theta_dict["t_c"],
-            theta_dict["phi_c"],
-        )
-        detector_angles = DetectorAngles(theta_dict["alpha"], theta_dict["delta"], theta_dict["psi"])
-        return cls(waveform_parameters, detector_angles)
-
-
-@dataclass
-class Grid:
-    """
-    Grid for signal sampling.
-
-    Parameters
-    ----------
-    t_d
-        Duration of the signal (s).
-    f_s
-        Sampling frequency (Hz).
-    """
-
-    t_d: float
-    f_s: float
-
-    def __post_init__(self) -> None:
-        """Validate parameters after initialisation."""
-        if not (self.t_d * self.f_s).is_integer():
-            msg = "The product of t_d and f_s must be an integer."
-            raise ValueError(msg)
-
-        if self.n % 2 != 0:
-            msg = "The product of t_d and f_s must be even."
-            raise ValueError(msg)
-
-    @property
-    def f_max(self) -> float:
-        """Maximum (Nyquist) frequency (Hz)."""
-        return self.f_s / 2
-
-    @property
-    def n(self) -> int:
-        """Number of time samples."""
-        return round(self.t_d * self.f_s)
-
-    @property
-    def m(self) -> int:
-        """Number of frequency samples."""
-        return self.n // 2
-
-    @property
-    def delta_t(self) -> float:
-        """Time resolution (s)."""
-        return 1 / self.f_s
-
-    @property
-    def delta_f(self) -> float:
-        """Frequency resolution (Hz)."""
-        return 1 / self.t_d
-
-    @property
-    def t(self) -> numpy.typing.NDArray[numpy.float64]:
-        """Time array (s)."""
-        return numpy.arange(self.n + 1, dtype=numpy.float64) * self.delta_t
-
-    @property
-    def f(self) -> numpy.typing.NDArray[numpy.float64]:
-        """Frequency array (Hz)."""
-        return numpy.arange(self.m + 1, dtype=numpy.float64) * self.delta_f
-
-    def generate_gaussian_noise(self, rng: numpy.random.Generator) -> numpy.typing.NDArray[numpy.complex128]:
-        """
-        Generate frequency-domain Gaussian noise per unit amplitude spectral density.
-
-        Parameters
-        ----------
-        rng
-            Random number generator for the noise generation.
-
-        Returns
-        -------
-        m_tilde
-            Frequency-domain Gaussian noise per unit amplitude spectral density (Hz^-1/2).
-        """
-        x = rng.standard_normal((2, self.m + 1), dtype=numpy.float64)
-
-        sigma = (1 / 4 * self.t_d) ** (1 / 2)
-
-        m_tilde: numpy.typing.NDArray[numpy.complex128] = (x[0] + 1j * x[1]) * sigma
-        m_tilde[0] = 0
-        m_tilde[-1] = 0
-        return m_tilde
+"""Geocentre position vector (m)."""
+D: Final[numpy.typing.NDArray[numpy.float64]] = 1 / 2 * numpy.array([[1, 0, 0], [0, -1, 0], [0, 0, 0]])
+"""Default response tensor in the geocentric frame."""
+PWD = Path(__file__).parent
 
 
 class Interferometer:
@@ -206,7 +45,7 @@ class Interferometer:
 
     def __init__(
         self,
-        grid: Grid,
+        grid: grid.Grid,
         amplitude_spectral_density_file: Path,
         f_min: float = 0,
         f_max: float = constants.INF,
@@ -250,22 +89,18 @@ class Interferometer:
 
         self.d_tilde = n_tilde.copy()
 
-    def calculate_pattern_functions(
-        self, alpha: float, delta: float, psi: float, gmst: float
-    ) -> tuple[numpy.float64, numpy.float64]:
+    def calculate_pattern_functions(self, theta: float, phi: float, psi: float) -> tuple[numpy.float64, numpy.float64]:
         """
         Calculate the interferometer pattern functions.
 
         Parameters
         ----------
-        alpha
-            Right ascension of the source in the detector frame (rad).
-        delta
-            Declination of the source in the detector frame (rad).
+        theta
+            Polar angle of the source in the geocentric frame (rad).
+        phi
+            Azimuthal angle of the source in the geocentric frame (rad).
         psi
-            Polarization angle of the source in the detector frame (rad).
-        gmst
-            Greenwich mean sidereal time (rad).
+            Polarization angle of the source in the geocentric frame (rad).
 
         Returns
         -------
@@ -274,7 +109,7 @@ class Interferometer:
         f_cross
             Cross pattern function.
         """
-        e_plus, e_cross = calculate_polarisation_tensors(alpha, delta, psi, gmst)
+        e_plus, e_cross = calculate_polarisation_tensors(theta, phi, psi)
 
         f_plus = numpy.float64(numpy.tensordot(self.d, e_plus))
         f_cross = numpy.float64(numpy.tensordot(self.d, e_cross))
@@ -282,7 +117,7 @@ class Interferometer:
         return f_plus, f_cross
 
     def calculate_strain(
-        self, model: waveform.WaveformModel, theta: SignalParameters
+        self, model: waveform.WaveformModel, theta: parameters.SignalParameters
     ) -> numpy.typing.NDArray[numpy.complex128]:
         """
         Calculate the frequency-domain strain response in the interferometer.
@@ -301,14 +136,11 @@ class Interferometer:
         """
         h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, theta.waveform_parameters)
         f_plus, f_cross = self.calculate_pattern_functions(
-            theta.detector_angles.alpha,
-            theta.detector_angles.delta,
+            theta.detector_angles.theta,
+            theta.detector_angles.phi,
             theta.detector_angles.psi,
-            theta.detector_angles.gmst,
         )
-        delta_t = calculate_time_delay(
-            self.x, GEOCENTRE, theta.detector_angles.alpha, theta.detector_angles.delta, theta.detector_angles.gmst
-        )
+        delta_t = calculate_time_delay(self.x, GEOCENTRE, theta.detector_angles.theta, theta.detector_angles.phi)
         h_tilde: numpy.typing.NDArray[numpy.complex128] = (h_tilde_plus * f_plus + h_tilde_cross * f_cross) * numpy.exp(
             -2j * constants.PI * self.f * delta_t
         )
@@ -372,7 +204,7 @@ class Interferometer:
         return self.calculate_inner_product(h_tilde, self.d_tilde) / rho_opt
 
     def inject_signal(
-        self, model: waveform.WaveformModel, theta: SignalParameters
+        self, model: waveform.WaveformModel, theta: parameters.SignalParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.float64, numpy.complex128]:
         """
         Inject gravitational-wave signal into the interferometer.
@@ -425,8 +257,7 @@ class LHO(Interferometer):
     [1]  <https://lscsoft.docs.ligo.org/lalsuite/lal/group___create_detector__c.html>.
     """
 
-    def __init__(self, grid: Grid, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
-        pwd = Path(__file__).parent
+    def __init__(self, grid: grid.Grid, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
         x = numpy.array([-2.1614149e6, -3.8346952e6, 4.6003502e6])
         d = numpy.array(
             [
@@ -435,7 +266,7 @@ class LHO(Interferometer):
                 [-0.2473886, 0.2279981, 0.0730903],
             ]
         )
-        super().__init__(grid, pwd / "data/aligo_O4high.txt", 20, 2048, x, d, rng, is_zero_noise)
+        super().__init__(grid, PWD / "data/aligo_O4high.txt", 20, 2048, x, d, rng, is_zero_noise)
 
 
 class LLO(Interferometer):
@@ -460,8 +291,7 @@ class LLO(Interferometer):
     [1]  <https://lscsoft.docs.ligo.org/lalsuite/lal/group___create_detector__c.html>.
     """
 
-    def __init__(self, grid: Grid, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
-        pwd = Path(__file__).parent
+    def __init__(self, grid: grid.Grid, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
         x = numpy.array([74276.044, -5.496283721e6, 3.224257018e6])
         d = numpy.array(
             [
@@ -470,7 +300,7 @@ class LLO(Interferometer):
                 [0.2472943, -0.1816157, -0.3022755],
             ]
         )
-        super().__init__(grid, pwd / "data/aligo_O4high.txt", 20, 2048, x, d, rng, is_zero_noise)
+        super().__init__(grid, PWD / "data/aligo_O4high.txt", 20, 2048, x, d, rng, is_zero_noise)
 
 
 def calculate_inner_product(
@@ -505,21 +335,19 @@ def calculate_inner_product(
 
 
 def calculate_polarisation_tensors(
-    alpha: float, delta: float, psi: float, gmst: float
+    theta: float, phi: float, psi: float
 ) -> tuple[numpy.typing.NDArray[numpy.float64], numpy.typing.NDArray[numpy.float64]]:
     """
     Calculate the plus and cross polarisation tensors of a gravitational wave.
 
     Parameters
     ----------
-    alpha
-        Right ascension of the source (rad).
-    delta
-        Declination of the source (rad).
+    theta
+        Polar angle of the source with respect in the geocentric frame (rad).
+    phi
+        Azimuthal angle of the source with respect in the geocentric frame (rad).
     psi
-        Polarisation angle of the source (rad).
-    gmst
-        Greenwich mean sidereal time (rad).
+        Polarisation angle of the source with respect in the geocentric frame (rad).
 
     Returns
     -------
@@ -536,39 +364,30 @@ def calculate_polarisation_tensors(
     ----------
     [1]  <https://arxiv.org/abs/0903.0528>.
     """
-    phi = alpha - gmst
-    theta = constants.PI / 2 - delta
+    sin_theta = numpy.sin(theta)
+    cos_theta = numpy.cos(theta)
+    sin_phi = numpy.sin(phi)
+    cos_phi = numpy.cos(phi)
+    sin_psi = numpy.sin(psi)
+    cos_psi = numpy.cos(psi)
 
-    u = numpy.array(
-        [
-            numpy.sin(phi) * numpy.cos(psi) - numpy.cos(theta) * numpy.cos(phi) * numpy.sin(psi),
-            -(numpy.cos(phi) * numpy.cos(psi) + numpy.cos(theta) * numpy.sin(phi) * numpy.sin(psi)),
-            numpy.sin(theta) * numpy.sin(psi),
-        ]
-    )
-    v = numpy.array(
-        [
-            -numpy.sin(phi) * numpy.sin(psi) - numpy.cos(theta) * numpy.cos(phi) * numpy.cos(psi),
-            numpy.cos(phi) * numpy.sin(psi) - numpy.cos(theta) * numpy.sin(phi) * numpy.cos(psi),
-            numpy.sin(theta) * numpy.cos(psi),
-        ]
-    )
+    theta_hat = numpy.array([cos_theta * cos_phi, cos_theta * sin_phi, -sin_theta])
+    phi_hat = numpy.array([-sin_phi, cos_phi, 0])
 
-    e_plus = numpy.outer(u, u) - numpy.outer(v, v)
-    e_cross = numpy.outer(u, v) + numpy.outer(v, u)
+    theta_hat_prime = cos_psi * theta_hat + sin_psi * phi_hat
+    phi_hat_prime = -sin_psi * theta_hat + cos_psi * phi_hat
+
+    e_plus = numpy.outer(theta_hat_prime, theta_hat_prime) - numpy.outer(phi_hat_prime, phi_hat_prime)
+    e_cross = numpy.outer(theta_hat_prime, phi_hat_prime) + numpy.outer(phi_hat_prime, theta_hat_prime)
 
     return e_plus, e_cross
 
 
 def calculate_time_delay(
-    x_1: numpy.typing.NDArray[numpy.floating],
-    x_2: numpy.typing.NDArray[numpy.floating],
-    alpha: float,
-    delta: float,
-    gmst: float,
+    x_1: numpy.typing.NDArray[numpy.floating], x_2: numpy.typing.NDArray[numpy.floating], theta: float, phi: float
 ) -> numpy.float64:
     """
-    Calculate the time delay between positions in geocentric coordinates.
+    Calculate the time delay between positions in the geocentric frame.
 
     Parameters
     ----------
@@ -576,12 +395,10 @@ def calculate_time_delay(
         Cartesian coordinate vector for the first position in the geocentric frame (m).
     x_2
         Cartesian coordinate vector for the second position in the geocentric frame (m).
-    alpha
-        Right ascension of the source (rad).
-    delta
-        Declination of the source (rad).
-    gmst
-        Greenwich mean sidereal time (rad).
+    theta
+        Polar angle of the source in the geocentric frame (rad).
+    phi
+        Azimuthal angle of the source in the geocentric frame (rad).
 
     Returns
     -------
@@ -590,18 +407,19 @@ def calculate_time_delay(
 
     Notes
     -----
-    The time delay is calculated following the implementation from LALSuite [1].
+    The time delay is calculated following the implementation in LALSuite [1].
 
     References
     ----------
     [1]  <https://lscsoft.docs.ligo.org/lalsuite/lal/group___time_delay__h.html>.
     """
-    phi = alpha - gmst
-    theta = constants.PI / 2 - delta
+    sin_theta = numpy.sin(theta)
+    cos_theta = numpy.cos(theta)
+    sin_phi = numpy.sin(phi)
+    cos_phi = numpy.cos(phi)
 
-    delta_t: numpy.float64 = (
-        (x_2[0] - x_1[0]) * numpy.sin(theta) * numpy.cos(phi)
-        + (x_2[1] - x_1[1]) * numpy.sin(theta) * numpy.sin(phi)
-        + (x_2[2] - x_1[2]) * numpy.cos(theta)
-    ) / constants.C
+    r_hat = numpy.array([sin_theta * cos_phi, sin_theta * sin_phi, cos_theta])
+    delta_x = x_2 - x_1
+
+    delta_t: numpy.float64 = numpy.vecdot(delta_x, r_hat) / constants.C
     return delta_t

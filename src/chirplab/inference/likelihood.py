@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
     import numpy
 
-    from chirplab.simulation import interferometer, waveform
+    from chirplab.simulation import interferometer, parameters, waveform
 
 
 class Likelihood(ABC):
@@ -54,7 +54,7 @@ class GravitationalWaveLikelihood(Likelihood):
         self,
         interferometer: interferometer.Interferometer,
         model: waveform.WaveformModel,
-        vector_to_parameters: Callable[[numpy.typing.NDArray[numpy.floating]], interferometer.SignalParameters],
+        vector_to_parameters: Callable[[numpy.typing.NDArray[numpy.floating]], parameters.SignalParameters],
     ) -> None:
         self.interferometer = interferometer
         self.model = model

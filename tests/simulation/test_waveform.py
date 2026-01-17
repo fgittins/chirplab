@@ -6,16 +6,16 @@ import numpy
 import pytest
 
 from chirplab import constants
-from chirplab.simulation import waveform
+from chirplab.simulation import parameters, waveform
 
 RTOL = 0
 ATOL = 1e-24
 
 
 @pytest.fixture(scope="module")
-def theta_default() -> waveform.WaveformParameters:
+def theta_default() -> parameters.WaveformParameters:
     """Return default set of signal parameters for testing."""
-    return waveform.WaveformParameters(
+    return parameters.WaveformParameters(
         30 * constants.M_SUN,
         30 * constants.M_SUN,
         500e6 * constants.PC,
@@ -29,33 +29,6 @@ def theta_default() -> waveform.WaveformParameters:
 def f_default() -> numpy.typing.NDArray[numpy.float64]:
     """Return default frequency array for testing."""
     return numpy.linspace(20, 70, 20, dtype=numpy.float64)
-
-
-class TestWaveformParameters:
-    """Tests for the WaveformParameters dataclass."""
-
-    def test_initialisation(self) -> None:
-        """Test that WaveformParameters can be initialised with all required fields."""
-        theta = waveform.WaveformParameters(
-            30 * constants.M_SUN,
-            30 * constants.M_SUN,
-            500e6 * constants.PC,
-            constants.PI / 3,
-            100,
-            1.5,
-        )
-
-        assert theta.m_1 == 30 * constants.M_SUN
-        assert theta.m_2 == 30 * constants.M_SUN
-        assert theta.r == 500e6 * constants.PC
-        assert theta.iota == constants.PI / 3
-        assert theta.t_c == 100
-        assert theta.phi_c == 1.5
-        assert theta.m_chirp == (theta.m_1 * theta.m_2) ** (3 / 5) / (theta.m_1 + theta.m_2) ** (1 / 5)
-
-    def test_total_mass_property(self, theta_default: waveform.WaveformParameters) -> None:
-        """Test that the m_total property correctly calculates total mass."""
-        assert theta_default.m_total == 60 * constants.M_SUN
 
 
 class TestNewtonianWaveformModel:
@@ -78,7 +51,7 @@ class TestNewtonianWaveformModel:
         self,
         model_default: waveform.NewtonianWaveformModel,
         f_default: numpy.typing.NDArray[numpy.float64],
-        theta_default: waveform.WaveformParameters,
+        theta_default: parameters.WaveformParameters,
     ) -> None:
         """Test that output arrays have the correct shape."""
         h_tilde_plus, h_tilde_cross = model_default.calculate_strain_polarisations(f_default, theta_default)
@@ -90,7 +63,7 @@ class TestNewtonianWaveformModel:
         self,
         model_default: waveform.NewtonianWaveformModel,
         f_default: numpy.typing.NDArray[numpy.float64],
-        theta_default: waveform.WaveformParameters,
+        theta_default: parameters.WaveformParameters,
     ) -> None:
         """Test that output arrays have the correct type."""
         h_tilde_plus, h_tilde_cross = model_default.calculate_strain_polarisations(f_default, theta_default)
@@ -99,7 +72,7 @@ class TestNewtonianWaveformModel:
         assert h_tilde_cross.dtype == numpy.complex128
 
     def test_zero_above_isco(
-        self, model_default: waveform.NewtonianWaveformModel, theta_default: waveform.WaveformParameters
+        self, model_default: waveform.NewtonianWaveformModel, theta_default: parameters.WaveformParameters
     ) -> None:
         """Test that the waveform is zero above the innermost stable circular orbit frequency."""
         f_isco = waveform.calculate_isco_frequency(theta_default.m_total)
@@ -110,7 +83,7 @@ class TestNewtonianWaveformModel:
         assert numpy.allclose(h_tilde_cross, 0, RTOL, ATOL)
 
     def test_non_zero_up_to_isco(
-        self, model_default: waveform.NewtonianWaveformModel, theta_default: waveform.WaveformParameters
+        self, model_default: waveform.NewtonianWaveformModel, theta_default: parameters.WaveformParameters
     ) -> None:
         """Test that the waveform is non-zero up to the innermost stable circular orbit frequency."""
         f_isco = waveform.calculate_isco_frequency(theta_default.m_total)
@@ -120,7 +93,7 @@ class TestNewtonianWaveformModel:
         assert not numpy.allclose(h_tilde_plus, 0, RTOL, ATOL)
         assert not numpy.allclose(h_tilde_cross, 0, RTOL, ATOL)
 
-    def test_non_zero_up_to_f_max(self, theta_default: waveform.WaveformParameters) -> None:
+    def test_non_zero_up_to_f_max(self, theta_default: parameters.WaveformParameters) -> None:
         """Test that the waveform is non-zero up to f_max when is_isco_cutoff is False."""
         f_max = 1000
         model = waveform.NewtonianWaveformModel(f_max, False)
@@ -134,7 +107,7 @@ class TestNewtonianWaveformModel:
         self,
         model_default: waveform.NewtonianWaveformModel,
         f_default: numpy.typing.NDArray[numpy.float64],
-        theta_default: waveform.WaveformParameters,
+        theta_default: parameters.WaveformParameters,
     ) -> None:
         """Test waveform when the orbit is edge on."""
         theta = replace(theta_default, iota=constants.PI / 2)
@@ -147,7 +120,7 @@ class TestNewtonianWaveformModel:
         self,
         model_default: waveform.NewtonianWaveformModel,
         f_default: numpy.typing.NDArray[numpy.float64],
-        theta_default: waveform.WaveformParameters,
+        theta_default: parameters.WaveformParameters,
     ) -> None:
         """Test waveform when the orbit is face on."""
         theta = replace(theta_default, iota=0)
@@ -159,7 +132,7 @@ class TestNewtonianWaveformModel:
         self,
         model_default: waveform.NewtonianWaveformModel,
         f_default: numpy.typing.NDArray[numpy.float64],
-        theta_default: waveform.WaveformParameters,
+        theta_default: parameters.WaveformParameters,
     ) -> None:
         """Test that amplitude decreases with increasing frequency."""
         h_tilde_plus, _ = model_default.calculate_strain_polarisations(f_default, theta_default)
@@ -172,7 +145,7 @@ class TestNewtonianWaveformModel:
         self,
         model_default: waveform.NewtonianWaveformModel,
         f_default: numpy.typing.NDArray[numpy.float64],
-        theta_default: waveform.WaveformParameters,
+        theta_default: parameters.WaveformParameters,
     ) -> None:
         """Test that amplitude scales inversely with distance."""
         ratio = 2
@@ -184,7 +157,7 @@ class TestNewtonianWaveformModel:
         assert numpy.all(ratio == abs(h_tilde_plus_near) / abs(h_tilde_plus_far))
 
     def test_single_frequency(
-        self, model_default: waveform.NewtonianWaveformModel, theta_default: waveform.WaveformParameters
+        self, model_default: waveform.NewtonianWaveformModel, theta_default: parameters.WaveformParameters
     ) -> None:
         """Test with a single frequency value."""
         f = numpy.array([40], dtype=numpy.float64)

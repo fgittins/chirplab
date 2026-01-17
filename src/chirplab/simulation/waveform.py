@@ -1,51 +1,14 @@
 """Module for gravitational-waveform models."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy
 
 from chirplab import constants
 
-
-@dataclass(frozen=True, slots=True)
-class WaveformParameters:
-    """
-    Parameters of the gravitational waveform.
-
-    Parameters
-    ----------
-    m_1
-        Mass of the first component in the binary (kg).
-    m_2
-        Mass of the second component in the binary (kg).
-    r
-        Luminosity distance to the binary (m).
-    iota
-        Inclination angle of the binary (rad).
-    t_c
-        Coalescence time (s).
-    phi_c
-        Coalescence phase (rad).
-    """
-
-    m_1: float
-    m_2: float
-    r: float
-    iota: float
-    t_c: float
-    phi_c: float
-
-    @property
-    def m_chirp(self) -> float:
-        """Chirp mass of the binary (kg)."""
-        m_chirp: float = (self.m_1 * self.m_2) ** (3 / 5) / (self.m_1 + self.m_2) ** (1 / 5)
-        return m_chirp
-
-    @property
-    def m_total(self) -> float:
-        """Total mass of the binary (kg)."""
-        return self.m_1 + self.m_2
+if TYPE_CHECKING:
+    from chirplab.simulation import parameters
 
 
 class WaveformModel(ABC):
@@ -63,7 +26,7 @@ class WaveformModel(ABC):
 
     @abstractmethod
     def calculate_strain_polarisations(
-        self, f: numpy.typing.NDArray[numpy.floating], theta: WaveformParameters
+        self, f: numpy.typing.NDArray[numpy.floating], theta: parameters.WaveformParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.
@@ -102,7 +65,7 @@ class NewtonianWaveformModel(WaveformModel):
         self.is_isco_cutoff = is_isco_cutoff
 
     def calculate_strain_polarisations(
-        self, f: numpy.typing.NDArray[numpy.floating], theta: WaveformParameters
+        self, f: numpy.typing.NDArray[numpy.floating], theta: parameters.WaveformParameters
     ) -> tuple[numpy.typing.NDArray[numpy.complex128], numpy.typing.NDArray[numpy.complex128]]:
         """
         Calculate the frequency-domain strain polarisations.
@@ -140,18 +103,20 @@ class NewtonianWaveformModel(WaveformModel):
             valid_mask = (f > 0) & (f <= self.f_max)
             f_valid = f[valid_mask]
 
+        t_chirp = constants.G * theta.m_chirp / constants.C**3
+
         a = (
             (5 / 24) ** (1 / 2)
             * (1 / constants.PI ** (2 / 3))
             * (constants.C / theta.r)
-            * (constants.G * theta.m_chirp / constants.C**3) ** (5 / 6)
+            * t_chirp ** (5 / 6)
             * (1 / f_valid ** (7 / 6))
         )
         psi = (
             2 * constants.PI * f_valid * theta.t_c
             - theta.phi_c
             - constants.PI / 4
-            + 3 / 4 * (constants.G * theta.m_chirp / constants.C**3 * 8 * constants.PI * f_valid) ** (-5 / 3)
+            + 3 / 4 * (t_chirp * 8 * constants.PI * f_valid) ** (-5 / 3)
         )
 
         b = a * numpy.exp(1j * psi)
