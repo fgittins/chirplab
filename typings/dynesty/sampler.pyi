@@ -1,5 +1,5 @@
 from collections.abc import Callable, Generator
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, overload
 
 import numpy
 from dynesty import internal_samplers, results, utils
@@ -69,6 +69,59 @@ class Sampler:
     bound_enlarge: None | float
     bounding: BOUND_TYPES
     bound_next: BOUND_TYPES
+    @overload
+    def __init__(
+        self,
+        loglikelihood: Callable[[numpy.typing.NDArray[numpy.floating]], float],
+        prior_transform: Callable[[numpy.typing.NDArray[numpy.floating]], numpy.typing.NDArray[numpy.floating]],
+        ndim: int,
+        live_points: tuple[
+            numpy.typing.NDArray[numpy.floating],
+            numpy.typing.NDArray[numpy.floating],
+            numpy.typing.NDArray[numpy.floating],
+        ],
+        sampling: internal_samplers.InternalSampler,
+        bounding: BOUND_TYPES,
+        ncdim: None | int = None,
+        rstate: None | numpy.random.Generator = None,
+        pool: Any = None,
+        use_pool: None | UsePoolDict = None,
+        queue_size: None | int = None,
+        bound_update_interval: None | int = None,
+        first_bound_update: None | FirstUpdateDict = None,
+        bound_bootstrap: None | int = None,
+        bound_enlarge: None | float = None,
+        blob: Literal[False] = False,
+        cite: None | str = None,
+        logvol_init: float = 0,
+    ) -> None: ...
+    @overload
+    def __init__(
+        self,
+        loglikelihood: Callable[[numpy.typing.NDArray[numpy.floating]], float],
+        prior_transform: Callable[[numpy.typing.NDArray[numpy.floating]], numpy.typing.NDArray[numpy.floating]],
+        ndim: int,
+        live_points: tuple[
+            numpy.typing.NDArray[numpy.floating],
+            numpy.typing.NDArray[numpy.floating],
+            numpy.typing.NDArray[numpy.floating],
+            numpy.typing.NDArray[numpy.floating],
+        ],
+        sampling: internal_samplers.InternalSampler,
+        bounding: BOUND_TYPES,
+        ncdim: None | int = None,
+        rstate: None | numpy.random.Generator = None,
+        pool: Any = None,
+        use_pool: None | UsePoolDict = None,
+        queue_size: None | int = None,
+        bound_update_interval: None | int = None,
+        first_bound_update: None | FirstUpdateDict = None,
+        bound_bootstrap: None | int = None,
+        bound_enlarge: None | float = None,
+        blob: Literal[True] = True,
+        cite: None | str = None,
+        logvol_init: float = 0,
+    ) -> None: ...
     def save(self, fname: str) -> None: ...
     @staticmethod
     def restore(fname: str, pool: Any = None) -> Sampler: ...

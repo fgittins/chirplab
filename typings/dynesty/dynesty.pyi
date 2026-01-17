@@ -25,7 +25,12 @@ class NestedSampler(sampler.Sampler):
         queue_size: None | int = None,
         pool: Any = None,
         use_pool: None | sampler.UsePoolDict = None,
-        live_points: None | list[numpy.typing.NDArray[numpy.floating] | float] = None,
+        live_points: None
+        | tuple[
+            numpy.typing.NDArray[numpy.floating],
+            numpy.typing.NDArray[numpy.floating],
+            numpy.typing.NDArray[numpy.floating],
+        ] = None,
         logl_args: None | Iterable[Any] = None,
         logl_kwargs: None | dict[str, Any] = None,
         ptform_args: None | Iterable[Any] = None,
