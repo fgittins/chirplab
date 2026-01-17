@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Literal
 
 import numpy
-from astropy import cosmology, units
+from astropy import cosmology, units  # type: ignore[import-untyped]
 from scipy import integrate, interpolate, special
 
 from chirplab import constants

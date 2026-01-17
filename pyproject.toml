@@ -92,10 +92,6 @@ strict_bytes = true
 extra_checks = true
 mypy_path = "typings"
 
-[[tool.mypy.overrides]]
-module = ["astropy.*"]
-ignore_missing_imports = true
-
 [tool.coverage.report]
 exclude_also = [
     "@abstractmethod",
