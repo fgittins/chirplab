@@ -1,6 +1,5 @@
 """Tests for the interferometer module."""
 
-from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 

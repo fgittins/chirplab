@@ -12,8 +12,6 @@ if TYPE_CHECKING:
 
     import numpy
 
-    from chirplab.simulation import interferometer, waveform
-
 
 @pytest.fixture(scope="class")
 def prior_default() -> prior.Prior:

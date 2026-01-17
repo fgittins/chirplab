@@ -1,11 +1,8 @@
 """Tests for the prior module."""
 
 import numpy
-import pytest
 
-from chirplab import constants
 from chirplab.inference import distribution, prior
-from chirplab.simulation import interferometer
 
 
 class TestPrior:

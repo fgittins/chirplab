@@ -1,7 +1,6 @@
 """Tests for the distribution module."""
 
 import numpy
-import pytest
 
 from chirplab import constants
 from chirplab.inference import distribution
