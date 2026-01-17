@@ -10,18 +10,16 @@ from chirplab.simulation import grid, parameters, waveform
 @pytest.fixture(scope="session")
 def theta_default() -> parameters.SignalParameters:
     """Return default set of signal parameters for testing."""
-    return parameters.SignalParameters.from_dict(
-        {
-            "m_1": 30 * constants.M_SUN,
-            "m_2": 30 * constants.M_SUN,
-            "r": 500e6 * constants.PC,
-            "iota": constants.PI / 3,
-            "t_c": 100,
-            "phi_c": 1.5,
-            "alpha": constants.PI / 4,
-            "delta": constants.PI / 2,
-            "psi": 0.5,
-        }
+    return parameters.SignalParameters(
+        30 * constants.M_SUN,
+        30 * constants.M_SUN,
+        500e6 * constants.PC,
+        constants.PI / 3,
+        100,
+        1.5,
+        0,
+        constants.PI / 4,
+        0.5,
     )
 
 

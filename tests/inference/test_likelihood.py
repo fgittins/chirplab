@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from chirplab.simulation import grid, parameters, waveform
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="class")
 def x_default() -> numpy.typing.NDArray[numpy.floating]:
     """Return default parameter vector for testing."""
     return numpy.array(
@@ -25,14 +25,14 @@ def x_default() -> numpy.typing.NDArray[numpy.floating]:
             constants.PI / 3,
             100,
             1.5,
+            0,
             constants.PI / 4,
-            constants.PI / 2,
             0.5,
         ]
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="class")
 def injected_interferometer_zero_noise_default(
     grid_default: grid.Grid,
     model_default: waveform.WaveformModel,

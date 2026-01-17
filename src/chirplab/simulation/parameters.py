@@ -1,11 +1,8 @@
-"""Module for gravitational-wave signal parameters."""
+"""Module for gravitational-wave parameters."""
 
 from dataclasses import dataclass
-from typing import Self
 
-from chirplab import constants
-
-# TODO: set gmst properly
+# TODO: introduce celestial coordinates
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,8 +36,7 @@ class WaveformParameters:
     @property
     def m_chirp(self) -> float:
         """Chirp mass of the binary (kg)."""
-        m_chirp: float = (self.m_1 * self.m_2) ** (3 / 5) / (self.m_1 + self.m_2) ** (1 / 5)
-        return m_chirp
+        return float((self.m_1 * self.m_2) ** (3 / 5) / (self.m_1 + self.m_2) ** (1 / 5))
 
     @property
     def m_total(self) -> float:
@@ -49,76 +45,50 @@ class WaveformParameters:
 
 
 @dataclass(frozen=True, slots=True)
-class DetectorAngles:
+class SignalParameters(WaveformParameters):
     """
-    Angles defining the source location and orientation in the geocentric frame.
+    Parameters of the gravitational-wave signal in the geocentric frame.
 
     Parameters
     ----------
-    alpha
-        Right ascension of the binary in the geocentric frame (rad).
-    delta
-        Declination of the binary in the geocentric frame (rad).
+    m_1
+        Mass of the first component in the binary (kg).
+    m_2
+        Mass of the second component in the binary (kg).
+    r
+        Luminosity distance to the binary (m).
+    iota
+        Inclination angle of the binary (rad).
+    t_c
+        Coalescence time (s).
+    phi_c
+        Coalescence phase (rad).
+    theta
+        Polar angle of the binary in the geocentric frame (rad).
+    phi
+        Azimuthal angle of the binary in the geocentric frame (rad).
     psi
         Polarisation angle of the binary in the geocentric frame (rad).
-    gmst
-        Greenwich mean sidereal time (rad).
     """
 
-    alpha: float
-    delta: float
+    theta: float
+    phi: float
     psi: float
-    gmst: float = 0
 
     @property
-    def theta(self) -> float:
-        """Polar angle of the binary in the detector frame (rad)."""
-        return constants.PI / 2 - self.delta
+    def alpha(self) -> float:
+        """Right ascension of the binary in the geocentric frame (rad)."""
+        msg = "Right ascension not implemented."
+        raise NotImplementedError(msg)
 
     @property
-    def phi(self) -> float:
-        """Azimuthal angle of the binary in the detector frame (rad)."""
-        return self.alpha - self.gmst
+    def delta(self) -> float:
+        """Declination of the binary in the geocentric frame (rad)."""
+        msg = "Declination not implemented."
+        raise NotImplementedError(msg)
 
-
-@dataclass(frozen=True, slots=True)
-class SignalParameters:
-    """
-    Parameters of the gravitational-wave signal as measured by the detector.
-
-    Parameters
-    ----------
-    waveform_parameters
-        Parameters of the gravitational waveform.
-    detector_angles
-        Angles defining the source location and orientation in the geocentric frame.
-    """
-
-    waveform_parameters: WaveformParameters
-    detector_angles: DetectorAngles
-
-    @classmethod
-    def from_dict(cls, theta_dict: dict[str, float]) -> Self:
-        """
-        Create SignalParameters from a dictionary.
-
-        Parameters
-        ----------
-        theta_dict
-            Dictionary containing the signal parameters.
-
-        Returns
-        -------
-        theta
-            Parameters of the gravitational-wave signal as measured by the detector.
-        """
-        waveform_parameters = WaveformParameters(
-            theta_dict["m_1"],
-            theta_dict["m_2"],
-            theta_dict["r"],
-            theta_dict["iota"],
-            theta_dict["t_c"],
-            theta_dict["phi_c"],
-        )
-        detector_angles = DetectorAngles(theta_dict["alpha"], theta_dict["delta"], theta_dict["psi"])
-        return cls(waveform_parameters, detector_angles)
+    @property
+    def gmst(self) -> float:
+        """Greenwich mean sidereal time at coalescence (rad)."""
+        msg = "Greenwich mean sidereal time not implemented."
+        raise NotImplementedError(msg)

@@ -14,19 +14,7 @@ if TYPE_CHECKING:
 
 def vector_to_parameters(x: numpy.typing.NDArray[numpy.floating]) -> parameters.SignalParameters:
     """Convert a vector to signal parameters."""
-    return parameters.SignalParameters.from_dict(
-        {
-            "m_1": x[0],
-            "m_2": x[1],
-            "r": x[2],
-            "iota": x[3],
-            "t_c": x[4],
-            "phi_c": x[5],
-            "alpha": x[6],
-            "delta": x[7],
-            "psi": x[8],
-        }
-    )
+    return parameters.SignalParameters(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8])
 
 
 @pytest.fixture(scope="session")

@@ -272,3 +272,75 @@ class TestCalculateInnerProduct:
 
         with pytest.raises(AssertionError):
             interferometer.calculate_inner_product(a_tilde, b_tilde, s_n_default, delta_f)
+
+
+class TestCalculatePolarisationTensors:
+    """Tests for the calculate_polarisation_tensors function."""
+
+    def test_polarisation_tensors_orthogonality(self) -> None:
+        """Test that polarisation tensors are orthogonal."""
+        theta_array = numpy.linspace(0, constants.PI, 10)
+        phi_array = numpy.linspace(0, 2 * constants.PI, 10)
+        psi_array = numpy.linspace(0, constants.PI, 10)
+        for theta, phi, psi in zip(theta_array, phi_array, psi_array, strict=False):
+            e_plus, e_cross = interferometer.calculate_polarisation_tensors(theta, phi, psi)
+            dot_product = numpy.tensordot(e_plus, e_cross)
+
+            assert numpy.isclose(dot_product, 0)
+
+    def test_polarisation_tensors_self_product(self) -> None:
+        """Test that self-product of polarisation tensors equals 2."""
+        theta_array = numpy.linspace(0, constants.PI, 10)
+        phi_array = numpy.linspace(0, 2 * constants.PI, 10)
+        psi_array = numpy.linspace(0, constants.PI, 10)
+        for theta, phi, psi in zip(theta_array, phi_array, psi_array, strict=False):
+            e_plus, e_cross = interferometer.calculate_polarisation_tensors(theta, phi, psi)
+            dot_product_plus = numpy.tensordot(e_plus, e_plus)
+            dot_product_cross = numpy.tensordot(e_cross, e_cross)
+
+            assert numpy.isclose(dot_product_plus, 2)
+            assert numpy.isclose(dot_product_cross, 2)
+
+    def test_case(self) -> None:
+        """Test polarisation tensors for a specific case."""
+        theta = phi = psi = 0
+        e_plus, e_cross = interferometer.calculate_polarisation_tensors(theta, phi, psi)
+        e_plus_expected = numpy.array([[1, 0, 0], [0, -1, 0], [0, 0, 0]])
+        e_cross_expected = numpy.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+
+        assert numpy.array_equal(e_plus, e_plus_expected)
+        assert numpy.array_equal(e_cross, e_cross_expected)
+
+    def test_polarisation(self) -> None:
+        """Test that polarisation tensors rotate correctly with polarisation angle."""
+        theta = phi = 0
+        e_plus_0, e_cross_0 = interferometer.calculate_polarisation_tensors(theta, phi, 0)
+        psi_array = numpy.linspace(0, constants.PI, 10)
+        for psi in psi_array:
+            e_plus, e_cross = interferometer.calculate_polarisation_tensors(theta, phi, psi)
+
+            assert numpy.allclose(e_plus, numpy.cos(2 * psi) * e_plus_0 + numpy.sin(2 * psi) * e_cross_0)
+            assert numpy.allclose(e_cross, -numpy.sin(2 * psi) * e_plus_0 + numpy.cos(2 * psi) * e_cross_0)
+
+
+class TestCalculateTimeDelay:
+    """Tests for the calculate_time_delay function."""
+
+    def test_time_delay_zero_direction(self) -> None:
+        """Test that time delay is zero for source at zenith."""
+        theta = phi = 0
+        x_1 = numpy.array([0, 0, 0])
+        x_2 = numpy.array([1000, 1000, 0])
+        delta_t = interferometer.calculate_time_delay(x_1, x_2, theta, phi)
+
+        assert numpy.isclose(delta_t, 0)
+
+    def test_time_delay_opposite_directions(self) -> None:
+        """Test that time delays for opposite directions have opposite signs."""
+        theta, phi = constants.PI / 4, constants.PI / 3
+        x_1 = numpy.array([0, 0, 0])
+        x_2 = numpy.array([1000, 1000, 0])
+        delta_t_1 = interferometer.calculate_time_delay(x_1, x_2, theta, phi)
+        delta_t_2 = interferometer.calculate_time_delay(x_1, x_2, constants.PI - theta, phi + constants.PI)
+
+        assert numpy.isclose(delta_t_1, -delta_t_2)

@@ -134,13 +134,9 @@ class Interferometer:
         h_tilde
             Frequency-domain strain (Hz^-1).
         """
-        h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, theta.waveform_parameters)
-        f_plus, f_cross = self.calculate_pattern_functions(
-            theta.detector_angles.theta,
-            theta.detector_angles.phi,
-            theta.detector_angles.psi,
-        )
-        delta_t = calculate_time_delay(self.x, GEOCENTRE, theta.detector_angles.theta, theta.detector_angles.phi)
+        h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, theta)
+        f_plus, f_cross = self.calculate_pattern_functions(theta.theta, theta.phi, theta.psi)
+        delta_t = calculate_time_delay(self.x, GEOCENTRE, theta.theta, theta.phi)
         h_tilde: numpy.typing.NDArray[numpy.complex128] = (h_tilde_plus * f_plus + h_tilde_cross * f_cross) * numpy.exp(
             -2j * constants.PI * self.f * delta_t
         )
