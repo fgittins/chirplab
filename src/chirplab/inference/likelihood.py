@@ -29,7 +29,7 @@ class Likelihood(ABC):
         ln_p
             Log of the probability density function.
         """
-        pass
+        ...
 
 
 class GravitationalWaveLikelihood(Likelihood):

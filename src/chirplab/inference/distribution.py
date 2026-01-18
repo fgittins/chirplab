@@ -46,7 +46,7 @@ class Distribution(ABC):
         x
             Quantile corresponding to the given probability.
         """
-        pass
+        ...
 
     def sample(self, rng: None | numpy.random.Generator = None) -> float:
         """

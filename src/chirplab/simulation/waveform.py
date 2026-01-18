@@ -45,7 +45,7 @@ class WaveformModel(ABC):
         h_tilde_cross
             Frequency-domain cross-polarisation strain (Hz^-1).
         """
-        pass
+        ...
 
 
 class NewtonianWaveformModel(WaveformModel):
@@ -58,6 +58,14 @@ class NewtonianWaveformModel(WaveformModel):
         Maximum frequency for the waveform (Hz).
     is_isco_cutoff
         Whether to apply a cutoff at the innermost stable circular orbit frequency.
+
+    Notes
+    -----
+    This implementation follows Eqs. (4.34)-(4.37) of Ref. [1].
+
+    References
+    ----------
+    [1]  M. Maggiore, Gravitational Waves. Volume 1: Theory and Experiments (Oxford University Press, 2008).
     """
 
     def __init__(self, f_max: float = constants.INF, is_isco_cutoff: bool = True) -> None:
@@ -83,14 +91,6 @@ class NewtonianWaveformModel(WaveformModel):
             Frequency-domain plus-polarisation strain (Hz^-1).
         h_tilde_cross
             Frequency-domain cross-polarisation strain (Hz^-1).
-
-        Notes
-        -----
-        This implementation follows Eqs. (4.34)-(4.37) of Ref. [1].
-
-        References
-        ----------
-        [1]  M. Maggiore, Gravitational Waves. Volume 1: Theory and Experiments (Oxford University Press, 2008).
         """
         h_tilde_plus = numpy.zeros_like(f, numpy.complex128)
         h_tilde_cross = numpy.zeros_like(f, numpy.complex128)

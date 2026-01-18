@@ -197,10 +197,11 @@ class TestLLO:
     def test_initialisation(self, grid_default: grid.Grid) -> None:
         """Test that LLO can be initialised."""
         llo = interferometer.LLO(grid_default)
+        f_min, f_max = 20, 2048
 
         assert llo.grid == grid_default
-        assert 20 <= llo.f.min()
-        assert llo.f.max() <= 2048
+        assert f_min == llo.f.min()
+        assert llo.f.max() == f_max
 
 
 class TestLHO:
@@ -209,10 +210,11 @@ class TestLHO:
     def test_initialisation(self, grid_default: grid.Grid) -> None:
         """Test that LHO can be initialised."""
         lho = interferometer.LHO(grid_default)
+        f_min, f_max = 20, 2048
 
         assert lho.grid == grid_default
-        assert 20 <= lho.f.min()
-        assert lho.f.max() <= 2048
+        assert f_min == lho.f.min()
+        assert lho.f.max() == f_max
 
 
 class TestCalculateInnerProduct:
