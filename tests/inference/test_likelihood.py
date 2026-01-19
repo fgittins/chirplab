@@ -44,19 +44,32 @@ def injected_interferometer_zero_noise_default(
     return ifo
 
 
-class TestLikelihood:
-    """Tests for the Likelihood class."""
+class TestGravitationalWaveLikelihood:
+    """Tests for the GravitationalWaveLikelihood class."""
 
     def test_initialisation(
         self, model_default: waveform.WaveformModel, injected_interferometer_default: interferometer.Interferometer
     ) -> None:
-        """Test that Likelihood can be initialised with an interferometer and waveform model."""
+        """Test that GravitationalWaveLikelihood can be initialised with an interferometer and waveform model."""
         like = likelihood.GravitationalWaveLikelihood(
             injected_interferometer_default, model_default, vector_to_parameters
         )
 
         assert like.interferometer == injected_interferometer_default
         assert like.model == model_default
+        assert like.vector_to_parameters == vector_to_parameters
+        assert isinstance(like.ln_n, numpy.floating)
+        assert isinstance(like.d_inner_d, numpy.floating)
+
+    def test_initialisation_normalised(
+        self, model_default: waveform.WaveformModel, injected_interferometer_default: interferometer.Interferometer
+    ) -> None:
+        """Test that GravitationalWaveLikelihood can be initialised with normalised likelihood."""
+        like = likelihood.GravitationalWaveLikelihood(
+            injected_interferometer_default, model_default, vector_to_parameters, is_normalised=True
+        )
+
+        assert like.ln_n != 0.0
 
     def test_log_likelihood_noise_is_real(self, likelihood_default: likelihood.GravitationalWaveLikelihood) -> None:
         """Test that the noise log-likelihood is a real number."""

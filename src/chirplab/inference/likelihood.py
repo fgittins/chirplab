@@ -3,10 +3,12 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+import numpy
+
+from chirplab import constants
+
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-    import numpy
 
     from chirplab.simulation import interferometer, parameters, waveform
 
@@ -44,10 +46,8 @@ class GravitationalWaveLikelihood(Likelihood):
         Gravitational-waveform model.
     vector_to_parameters
         Function to convert vector to gravitational-wave signal parameters.
-
-    Notes
-    -----
-    Irrelevant additive constants have been omitted.
+    is_normalised
+        Whether the likelihood function is normalised.
     """
 
     def __init__(
@@ -55,14 +55,19 @@ class GravitationalWaveLikelihood(Likelihood):
         interferometer: interferometer.Interferometer,
         model: waveform.WaveformModel,
         vector_to_parameters: Callable[[numpy.typing.NDArray[numpy.floating]], parameters.SignalParameters],
+        is_normalised: bool = False,
     ) -> None:
         self.interferometer = interferometer
         self.model = model
         self.vector_to_parameters = vector_to_parameters
 
-        self.d_inner_d = self.interferometer.calculate_inner_product(
-            self.interferometer.d_tilde, self.interferometer.d_tilde
-        ).real
+        if is_normalised:
+            self.ln_n = numpy.sum(
+                numpy.log(2 * interferometer.grid.delta_f / (constants.PI * interferometer.s_n)), dtype=numpy.float64
+            )
+        else:
+            self.ln_n = numpy.float64(0)
+        self.d_inner_d = interferometer.calculate_inner_product(interferometer.d_tilde, interferometer.d_tilde).real
 
     def calculate_log_pdf(self, x: numpy.typing.NDArray[numpy.floating]) -> numpy.float64:
         """
@@ -99,4 +104,4 @@ class GravitationalWaveLikelihood(Likelihood):
         -----
         Under the noise hypothesis, the collected data are explained by noise alone, which is assumed to be Gaussian.
         """
-        return -1 / 2 * self.d_inner_d
+        return self.ln_n - 1 / 2 * self.d_inner_d
