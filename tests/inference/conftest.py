@@ -35,4 +35,6 @@ def likelihood_default(
     injected_interferometer_default: interferometer.Interferometer, model_default: waveform.WaveformModel
 ) -> likelihood.GravitationalWaveLikelihood:
     """Return default likelihood object for testing."""
-    return likelihood.GravitationalWaveLikelihood(injected_interferometer_default, model_default, vector_to_parameters)
+    return likelihood.GravitationalWaveLikelihood(
+        (injected_interferometer_default,), model_default, vector_to_parameters
+    )

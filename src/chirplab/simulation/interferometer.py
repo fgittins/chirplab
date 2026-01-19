@@ -10,8 +10,6 @@ from chirplab import constants
 if TYPE_CHECKING:
     from chirplab.simulation import grid, parameters, waveform
 
-# TODO: add multiple interferometers in a network
-
 GEOCENTRE: Final[numpy.typing.NDArray[numpy.float64]] = numpy.array([0, 0, 0], dtype=numpy.float64)
 """Geocentre position vector (m)."""
 D: Final[numpy.typing.NDArray[numpy.float64]] = 1 / 2 * numpy.array([[1, 0, 0], [0, -1, 0], [0, 0, 0]])

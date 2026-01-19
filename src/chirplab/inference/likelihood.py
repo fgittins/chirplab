@@ -8,7 +8,7 @@ import numpy
 from chirplab import constants
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
     from chirplab.simulation import interferometer, parameters, waveform
 
@@ -28,7 +28,7 @@ class Likelihood(ABC):
 
         Returns
         -------
-        ln_p
+        ln_l
             Log of the probability density function.
         """
         ...
@@ -40,8 +40,8 @@ class GravitationalWaveLikelihood(Likelihood):
 
     Parameters
     ----------
-    interferometer
-        Gravitational-wave interferometer.
+    interferometers
+        Gravitational-wave interferometers.
     model
         Gravitational-waveform model.
     vector_to_parameters
@@ -52,22 +52,26 @@ class GravitationalWaveLikelihood(Likelihood):
 
     def __init__(
         self,
-        interferometer: interferometer.Interferometer,
+        interferometers: Iterable[interferometer.Interferometer],
         model: waveform.WaveformModel,
         vector_to_parameters: Callable[[numpy.typing.NDArray[numpy.floating]], parameters.SignalParameters],
         is_normalised: bool = False,
     ) -> None:
-        self.interferometer = interferometer
+        self.interferometers = interferometers
         self.model = model
         self.vector_to_parameters = vector_to_parameters
 
-        if is_normalised:
-            self.ln_n = numpy.sum(
-                numpy.log(2 * interferometer.grid.delta_f / (constants.PI * interferometer.s_n)), dtype=numpy.float64
+        self.ln_n = numpy.float64(0)
+        self.d_inner_d: list[numpy.float64] = []
+        for interferometer in interferometers:
+            if is_normalised:
+                self.ln_n += numpy.sum(
+                    numpy.log(2 * interferometer.grid.delta_f / (constants.PI * interferometer.s_n)),
+                    dtype=numpy.float64,
+                )
+            self.d_inner_d.append(
+                interferometer.calculate_inner_product(interferometer.d_tilde, interferometer.d_tilde).real
             )
-        else:
-            self.ln_n = numpy.float64(0)
-        self.d_inner_d = interferometer.calculate_inner_product(interferometer.d_tilde, interferometer.d_tilde).real
 
     def calculate_log_pdf(self, x: numpy.typing.NDArray[numpy.floating]) -> numpy.float64:
         """
@@ -80,7 +84,7 @@ class GravitationalWaveLikelihood(Likelihood):
 
         Returns
         -------
-        ln_p
+        ln_l
             Log of the probability density function.
 
         Notes
@@ -89,11 +93,12 @@ class GravitationalWaveLikelihood(Likelihood):
         signal and noise, which is assumed to be Gaussian.
         """
         theta = self.vector_to_parameters(x)
-        h_tilde = self.interferometer.calculate_strain(self.model, theta)
-        inner_product = self.interferometer.calculate_inner_product(
-            -2 * self.interferometer.d_tilde + h_tilde, h_tilde
-        ).real
-        return self.ln_l_noise - 1 / 2 * inner_product
+        ln_l = self.ln_l_noise
+        for interferometer in self.interferometers:
+            h_tilde = interferometer.calculate_strain(self.model, theta)
+            inner_product = interferometer.calculate_inner_product(-2 * interferometer.d_tilde + h_tilde, h_tilde).real
+            ln_l -= 1 / 2 * inner_product
+        return ln_l
 
     @property
     def ln_l_noise(self) -> numpy.float64:
@@ -104,4 +109,4 @@ class GravitationalWaveLikelihood(Likelihood):
         -----
         Under the noise hypothesis, the collected data are explained by noise alone, which is assumed to be Gaussian.
         """
-        return self.ln_n - 1 / 2 * self.d_inner_d
+        return self.ln_n - 1 / 2 * numpy.sum(self.d_inner_d, dtype=numpy.float64)
