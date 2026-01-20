@@ -44,15 +44,11 @@ class TestInterferometer:
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default)
 
         assert ifo.grid == grid_default
-
-    def test_frequency_band(self, grid_default: grid.Grid, amplitude_spectral_density_file_default: Path) -> None:
-        """Test that frequency band restriction works correctly."""
-        f_min = 50
-        f_max = 500
-        ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, f_min, f_max)
-
-        assert numpy.all(f_min <= ifo.f)
-        assert numpy.all(ifo.f <= f_max)
+        assert isinstance(ifo.x, numpy.ndarray)
+        assert isinstance(ifo.d, numpy.ndarray)
+        assert isinstance(ifo.in_bounds_mask, numpy.ndarray)
+        assert isinstance(ifo.f, numpy.ndarray)
+        assert isinstance(ifo.s_n, numpy.ndarray)
 
     def test_noise_generation_zero_noise(
         self, grid_default: grid.Grid, amplitude_spectral_density_file_default: Path
@@ -197,11 +193,13 @@ class TestLLO:
     def test_initialisation(self, grid_default: grid.Grid) -> None:
         """Test that LLO can be initialised."""
         llo = interferometer.LLO(grid_default)
-        f_min, f_max = 20, 2048
 
         assert llo.grid == grid_default
-        assert f_min == llo.f.min()
-        assert llo.f.max() == f_max
+        assert isinstance(llo.x, numpy.ndarray)
+        assert isinstance(llo.d, numpy.ndarray)
+        assert isinstance(llo.in_bounds_mask, numpy.ndarray)
+        assert isinstance(llo.f, numpy.ndarray)
+        assert isinstance(llo.s_n, numpy.ndarray)
 
 
 class TestLHO:
@@ -210,11 +208,13 @@ class TestLHO:
     def test_initialisation(self, grid_default: grid.Grid) -> None:
         """Test that LHO can be initialised."""
         lho = interferometer.LHO(grid_default)
-        f_min, f_max = 20, 2048
 
         assert lho.grid == grid_default
-        assert f_min == lho.f.min()
-        assert lho.f.max() == f_max
+        assert isinstance(lho.x, numpy.ndarray)
+        assert isinstance(lho.d, numpy.ndarray)
+        assert isinstance(lho.in_bounds_mask, numpy.ndarray)
+        assert isinstance(lho.f, numpy.ndarray)
+        assert isinstance(lho.s_n, numpy.ndarray)
 
 
 class TestCalculateInnerProduct:

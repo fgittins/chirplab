@@ -60,7 +60,7 @@ class Interferometer:
         self.f = grid.f[self.in_bounds_mask]
 
         f, amplitude_spectral_density = numpy.loadtxt(amplitude_spectral_density_file, numpy.float64, unpack=True)
-        self.s_n: numpy.typing.NDArray[numpy.float64] = numpy.interp(self.f, f, amplitude_spectral_density**2)
+        self.s_n = numpy.interp(self.f, f, amplitude_spectral_density**2)
 
         self.set_data(rng, is_zero_noise)
 
@@ -133,8 +133,11 @@ class Interferometer:
             Frequency-domain strain (Hz^-1).
         """
         h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, theta)
+
         f_plus, f_cross = self.calculate_pattern_functions(theta.theta, theta.phi, theta.psi)
+
         delta_t = calculate_time_delay(self.x, GEOCENTRE, theta.theta, theta.phi)
+
         h_tilde: numpy.typing.NDArray[numpy.complex128] = (h_tilde_plus * f_plus + h_tilde_cross * f_cross) * numpy.exp(
             -2j * constants.PI * self.f * delta_t
         )
@@ -415,5 +418,4 @@ def calculate_time_delay(
     r_hat = numpy.array([sin_theta * cos_phi, sin_theta * sin_phi, cos_theta])
     delta_x = x_2 - x_1
 
-    delta_t: numpy.float64 = numpy.vecdot(delta_x, r_hat) / constants.C
-    return delta_t
+    return numpy.float64(numpy.dot(delta_x, r_hat) / constants.C)
