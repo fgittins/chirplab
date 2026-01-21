@@ -104,3 +104,10 @@ class TestGrid:
 
         assert numpy.isclose(n_tilde[1:-1].mean(), 0, rtol, atol)
         assert numpy.isclose((n_tilde[1:-1].conj() * n_tilde[1:-1]).mean(), 1 / 2 * grid_default.t_d, rtol, atol)
+
+    def test_ft_ift(self, grid_default: grid.Grid, rng_default: numpy.random.Generator) -> None:
+        """Test that ft and ift are inverses of each other."""
+        y = rng_default.standard_normal(grid_default.n)
+        y_reconstructed = grid_default.calculate_inverse_fourier_transform(grid_default.calculate_fourier_transform(y))
+
+        assert numpy.allclose(y, y_reconstructed)

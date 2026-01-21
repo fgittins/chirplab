@@ -88,3 +88,39 @@ class Grid:
         m_tilde[0] = 0
         m_tilde[-1] = 0
         return m_tilde
+
+    def calculate_fourier_transform(
+        self, y: numpy.typing.NDArray[numpy.floating]
+    ) -> numpy.typing.NDArray[numpy.complex128]:
+        """
+        Compute the discrete Fourier transform of a time-domain signal.
+
+        Parameters
+        ----------
+        y
+            Time-domain signal.
+
+        Returns
+        -------
+        y_tilde
+            Frequency-domain signal (Hz^-1).
+        """
+        return numpy.fft.rfft(y) * self.delta_t
+
+    def calculate_inverse_fourier_transform(
+        self, y_tilde: numpy.typing.NDArray[numpy.complexfloating]
+    ) -> numpy.typing.NDArray[numpy.float64]:
+        """
+        Compute the inverse discrete Fourier transform of a frequency-domain signal.
+
+        Parameters
+        ----------
+        y_tilde
+            Frequency-domain signal (Hz^-1).
+
+        Returns
+        -------
+        y
+            Time-domain signal.
+        """
+        return numpy.fft.irfft(y_tilde) / self.delta_t
