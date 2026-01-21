@@ -141,7 +141,7 @@ class Sampler:
         maxiter: None | int = None,
         maxcall: None | int = None,
         dlogz: float = 0.01,
-        loglmax: float = numpy.inf,
+        logl_max: float = numpy.inf,
         add_live: bool = True,
         save_bounds: bool = True,
         resume: bool = False,
