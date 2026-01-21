@@ -56,7 +56,7 @@ class TestInterferometer:
         """Test that zero noise realisation is correctly generated."""
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, is_zero_noise=True)
 
-        assert numpy.allclose(ifo.d_tilde, 0, RTOL, ATOL)
+        assert numpy.allclose(ifo.s_tilde, 0, RTOL, ATOL)
 
     def test_noise_generation_with_rng(
         self,
@@ -67,7 +67,7 @@ class TestInterferometer:
         """Test that noise realisation is generated with random number generator."""
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, rng=rng_default)
 
-        assert not numpy.allclose(ifo.d_tilde, 0, RTOL, ATOL)
+        assert not numpy.allclose(ifo.s_tilde, 0, RTOL, ATOL)
 
     def test_noise_generation_reproducible(
         self, grid_default: grid.Grid, amplitude_spectral_density_file_default: Path
@@ -78,7 +78,7 @@ class TestInterferometer:
         rng_2 = numpy.random.default_rng(42)
         ifo_2 = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, rng=rng_2)
 
-        assert numpy.array_equal(ifo_1.d_tilde, ifo_2.d_tilde)
+        assert numpy.array_equal(ifo_1.s_tilde, ifo_2.s_tilde)
 
     def test_regenerate_noise(
         self,
@@ -90,7 +90,7 @@ class TestInterferometer:
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, is_zero_noise=True)
         ifo.set_data(rng=rng_default)
 
-        assert not numpy.allclose(ifo.d_tilde, 0, RTOL, ATOL)
+        assert not numpy.allclose(ifo.s_tilde, 0, RTOL, ATOL)
 
     @pytest.mark.parametrize(
         ("theta", "phi", "psi", "f_plus_expected", "f_cross_expected"),
@@ -167,11 +167,11 @@ class TestInterferometer:
     ) -> None:
         """Test that signal injection updates data stream."""
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default)
-        d_tilde_before = ifo.d_tilde.copy()
+        d_tilde_before = ifo.s_tilde.copy()
         h_tilde, rho_opt, rho_mf = ifo.inject_signal(model_default, theta_default)
 
-        assert not numpy.array_equal(ifo.d_tilde, d_tilde_before)
-        assert numpy.array_equal(ifo.d_tilde, d_tilde_before + h_tilde)
+        assert not numpy.array_equal(ifo.s_tilde, d_tilde_before)
+        assert numpy.array_equal(ifo.s_tilde, d_tilde_before + h_tilde)
 
     def test_inject_signal_matched_filter_signal_to_noise_ratio(
         self,

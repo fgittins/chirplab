@@ -62,7 +62,7 @@ class GravitationalWaveLikelihood(Likelihood):
         self.vector_to_parameters = vector_to_parameters
 
         self.ln_n = numpy.float64(0)
-        self.d_inner_d: list[numpy.float64] = []
+        self.s_inner_s: list[numpy.float64] = []
         for interferometer in interferometers:
             if is_normalised:
                 self.ln_n += numpy.sum(
@@ -73,8 +73,8 @@ class GravitationalWaveLikelihood(Likelihood):
                     ),
                     dtype=numpy.float64,
                 )
-            self.d_inner_d.append(
-                interferometer.calculate_inner_product(interferometer.d_tilde, interferometer.d_tilde).real
+            self.s_inner_s.append(
+                interferometer.calculate_inner_product(interferometer.s_tilde, interferometer.s_tilde).real
             )
 
     def calculate_log_pdf(self, x: numpy.typing.NDArray[numpy.floating]) -> numpy.float64:
@@ -100,8 +100,8 @@ class GravitationalWaveLikelihood(Likelihood):
         ln_l = self.ln_l_noise
         for interferometer in self.interferometers:
             h_tilde = interferometer.calculate_strain(self.model, theta)
-            inner_product = interferometer.calculate_inner_product(-2 * interferometer.d_tilde + h_tilde, h_tilde).real
-            ln_l -= 1 / 2 * inner_product
+            inner = interferometer.calculate_inner_product(-2 * interferometer.s_tilde + h_tilde, h_tilde).real
+            ln_l -= 1 / 2 * inner
         return ln_l
 
     @property
@@ -113,4 +113,4 @@ class GravitationalWaveLikelihood(Likelihood):
         -----
         Under the noise hypothesis, the collected data are explained by noise alone, which is assumed to be Gaussian.
         """
-        return self.ln_n - 1 / 2 * numpy.sum(self.d_inner_d, dtype=numpy.float64)
+        return self.ln_n - 1 / 2 * numpy.sum(self.s_inner_s, dtype=numpy.float64)

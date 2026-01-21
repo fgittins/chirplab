@@ -59,7 +59,7 @@ class TestGravitationalWaveLikelihood:
         assert like.model == model_default
         assert like.vector_to_parameters == vector_to_parameters
         assert isinstance(like.ln_n, numpy.floating)
-        assert isinstance(like.d_inner_d, list)
+        assert isinstance(like.s_inner_s, list)
 
     def test_initialisation_normalised(
         self, model_default: waveform.WaveformModel, injected_interferometer_default: interferometer.Interferometer
