@@ -66,7 +66,11 @@ class GravitationalWaveLikelihood(Likelihood):
         for interferometer in interferometers:
             if is_normalised:
                 self.ln_n += numpy.sum(
-                    numpy.log(2 * interferometer.grid.delta_f / (constants.PI * interferometer.s_n)),
+                    numpy.log(
+                        2
+                        * interferometer.grid.delta_f
+                        / (constants.PI * interferometer.s_n[interferometer.in_bounds_mask])
+                    ),
                     dtype=numpy.float64,
                 )
             self.d_inner_d.append(

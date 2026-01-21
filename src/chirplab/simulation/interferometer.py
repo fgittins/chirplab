@@ -56,11 +56,12 @@ class Interferometer:
         self.x = x
         self.d = d
 
-        self.in_bounds_mask = (f_min <= grid.f) & (grid.f <= f_max)
-        self.f = grid.f[self.in_bounds_mask]
+        self.f = grid.f
+        self.in_bounds_mask = (f_min <= self.f) & (self.f <= f_max)
 
         f, amplitude_spectral_density = numpy.loadtxt(amplitude_spectral_density_file, numpy.float64, unpack=True)
         self.s_n = numpy.interp(self.f, f, amplitude_spectral_density**2)
+        self.s_n[~self.in_bounds_mask] = constants.INF
 
         self.set_data(rng, is_zero_noise)
 
@@ -76,14 +77,14 @@ class Interferometer:
             Whether to use zero noise realisation.
         """
         # TODO: adapt this method to load real data
-        if is_zero_noise:
-            n_tilde = numpy.zeros_like(self.f, numpy.complex128)
-        else:
+        n_tilde = numpy.zeros_like(self.f, numpy.complex128)
+
+        if not is_zero_noise:
             if rng is None:
                 rng = numpy.random.default_rng()
 
             m_tilde = self.grid.generate_gaussian_noise(rng)
-            n_tilde = self.s_n ** (1 / 2) * m_tilde[self.in_bounds_mask]
+            n_tilde[self.in_bounds_mask] = self.s_n[self.in_bounds_mask] ** (1 / 2) * m_tilde[self.in_bounds_mask]
 
         self.d_tilde = n_tilde.copy()
 
@@ -132,7 +133,11 @@ class Interferometer:
         h_tilde
             Frequency-domain strain (Hz^-1).
         """
-        h_tilde_plus, h_tilde_cross = model.calculate_strain_polarisations(self.f, theta)
+        h_tilde_plus = numpy.zeros_like(self.f, numpy.complex128)
+        h_tilde_cross = numpy.zeros_like(self.f, numpy.complex128)
+        h_tilde_plus[self.in_bounds_mask], h_tilde_cross[self.in_bounds_mask] = model.calculate_strain_polarisations(
+            self.f[self.in_bounds_mask], theta
+        )
 
         f_plus, f_cross = self.calculate_pattern_functions(theta.theta, theta.phi, theta.psi)
 
