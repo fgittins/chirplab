@@ -44,7 +44,7 @@ class Grid:
     @property
     def m(self) -> int:
         """Number of frequency samples."""
-        return self.n // 2
+        return self.n // 2 + 1
 
     @property
     def delta_t(self) -> float:
@@ -59,12 +59,12 @@ class Grid:
     @property
     def t(self) -> numpy.typing.NDArray[numpy.float64]:
         """Time array (s)."""
-        return numpy.arange(self.n + 1, dtype=numpy.float64) * self.delta_t
+        return numpy.arange(self.n, dtype=numpy.float64) * self.delta_t
 
     @property
     def f(self) -> numpy.typing.NDArray[numpy.float64]:
         """Frequency array (Hz)."""
-        return numpy.arange(self.m + 1, dtype=numpy.float64) * self.delta_f
+        return numpy.arange(self.m, dtype=numpy.float64) * self.delta_f
 
     def generate_gaussian_noise(self, rng: numpy.random.Generator) -> numpy.typing.NDArray[numpy.complex128]:
         """
@@ -80,7 +80,7 @@ class Grid:
         m_tilde
             Frequency-domain Gaussian noise per unit amplitude spectral density (Hz^-1/2).
         """
-        x = rng.standard_normal((2, self.m + 1))
+        x = rng.standard_normal((2, self.m))
 
         sigma = (1 / 4 * self.t_d) ** (1 / 2)
 
