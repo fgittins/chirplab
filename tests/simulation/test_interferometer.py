@@ -46,8 +46,9 @@ class TestInterferometer:
         assert ifo.grid == grid_default
         assert isinstance(ifo.x, numpy.ndarray)
         assert isinstance(ifo.d, numpy.ndarray)
-        assert isinstance(ifo.in_bounds_mask, numpy.ndarray)
         assert isinstance(ifo.f, numpy.ndarray)
+        assert isinstance(ifo.t, numpy.ndarray)
+        assert isinstance(ifo.in_bounds_mask, numpy.ndarray)
         assert isinstance(ifo.s_n, numpy.ndarray)
 
     def test_noise_generation_zero_noise(
@@ -57,6 +58,7 @@ class TestInterferometer:
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, is_zero_noise=True)
 
         assert numpy.allclose(ifo.s_tilde, 0, RTOL, ATOL)
+        assert numpy.allclose(ifo.s, 0, RTOL, ATOL)
 
     def test_noise_generation_with_rng(
         self,
@@ -68,6 +70,7 @@ class TestInterferometer:
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, rng=rng_default)
 
         assert not numpy.allclose(ifo.s_tilde, 0, RTOL, ATOL)
+        assert not numpy.allclose(ifo.s, 0, RTOL, ATOL)
 
     def test_noise_generation_reproducible(
         self, grid_default: grid.Grid, amplitude_spectral_density_file_default: Path
@@ -79,6 +82,7 @@ class TestInterferometer:
         ifo_2 = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default, rng=rng_2)
 
         assert numpy.array_equal(ifo_1.s_tilde, ifo_2.s_tilde)
+        assert numpy.array_equal(ifo_1.s, ifo_2.s)
 
     def test_regenerate_noise(
         self,
@@ -91,6 +95,7 @@ class TestInterferometer:
         ifo.set_data(rng=rng_default)
 
         assert not numpy.allclose(ifo.s_tilde, 0, RTOL, ATOL)
+        assert not numpy.allclose(ifo.s, 0, RTOL, ATOL)
 
     @pytest.mark.parametrize(
         ("theta", "phi", "psi", "f_plus_expected", "f_cross_expected"),
@@ -167,11 +172,15 @@ class TestInterferometer:
     ) -> None:
         """Test that signal injection updates data stream."""
         ifo = interferometer.Interferometer(grid_default, amplitude_spectral_density_file_default)
-        d_tilde_before = ifo.s_tilde.copy()
+        s_tilde_before = ifo.s_tilde.copy()
+        s_before = ifo.s.copy()
         h_tilde, rho_opt, rho_mf = ifo.inject_signal(model_default, theta_default)
+        h = grid_default.calculate_inverse_fourier_transform(h_tilde)
 
-        assert not numpy.array_equal(ifo.s_tilde, d_tilde_before)
-        assert numpy.array_equal(ifo.s_tilde, d_tilde_before + h_tilde)
+        assert not numpy.array_equal(ifo.s_tilde, s_tilde_before)
+        assert numpy.array_equal(ifo.s_tilde, s_tilde_before + h_tilde)
+        assert not numpy.array_equal(ifo.s, s_before)
+        assert numpy.array_equal(ifo.s, s_before + h)
 
     def test_inject_signal_matched_filter_signal_to_noise_ratio(
         self,

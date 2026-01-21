@@ -57,6 +57,7 @@ class Interferometer:
         self.d = d
 
         self.f = grid.f
+        self.t = grid.t
         self.in_bounds_mask = (f_min <= self.f) & (self.f <= f_max)
 
         f, amplitude_spectral_density = numpy.loadtxt(amplitude_spectral_density_file, numpy.float64, unpack=True)
@@ -87,6 +88,7 @@ class Interferometer:
             n_tilde[self.in_bounds_mask] = self.s_n[self.in_bounds_mask] ** (1 / 2) * m_tilde[self.in_bounds_mask]
 
         self.s_tilde = n_tilde.copy()
+        self.s = self.grid.calculate_inverse_fourier_transform(n_tilde.copy())
 
     def calculate_pattern_functions(self, theta: float, phi: float, psi: float) -> tuple[numpy.float64, numpy.float64]:
         """
@@ -230,6 +232,7 @@ class Interferometer:
         h_tilde = self.calculate_strain(model, theta)
 
         self.s_tilde += h_tilde
+        self.s += self.grid.calculate_inverse_fourier_transform(h_tilde)
 
         rho_opt = self.calculate_optimal_signal_to_noise_ratio(h_tilde)
         rho_mf = self.calculate_matched_filter_signal_to_noise_ratio(h_tilde)
