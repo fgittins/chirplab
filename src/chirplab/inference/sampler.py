@@ -1,7 +1,7 @@
 """Module for sampling algorithms."""
 
 import time
-from typing import TYPE_CHECKING, Literal, Self, TypedDict
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 import dynesty
 import numpy
@@ -22,12 +22,36 @@ class FirstUpdateDict(TypedDict, total=False):
     min_eff: float
 
 
-# TODO: add pool option for multiprocessing
-
-
-class NestedSampler:
+# TODO: add checkpointing
+def run(
+    likelihood: likelihood.Likelihood,
+    prior: prior.Prior,
+    nlive: int = 500,
+    bound: BOUNDARY_TYPES = "multi",
+    sample: SAMPLE_TYPES = "auto",
+    update_interval: None | int | float = None,
+    first_update: None | FirstUpdateDict = None,
+    rng: None | numpy.random.Generator = None,
+    njobs: int = 1,
+    enlarge: None | float = None,
+    bootstrap: None | int = None,
+    walks: None | int = None,
+    facc: float = 0.5,
+    slices: None | int = None,
+    ncdim: None | int = None,
+    history_filename: None | str = None,
+    maxiter: None | int = None,
+    maxcall: None | int = None,
+    dlogz: None | float = None,
+    logl_max: float = numpy.inf,
+    add_live: bool = True,
+    print_progress: bool = True,
+    save_bounds: bool = True,
+    checkpoint_file: None | str = None,
+    checkpoint_every: float = 60,
+) -> dynesty.results.Results:
     """
-    Nested sampler.
+    Run the nested sampler.
 
     Parameters
     ----------
@@ -35,8 +59,6 @@ class NestedSampler:
         Likelihood function.
     prior
         Prior distribution.
-    rng
-        Random number generator for the sampling.
     nlive
         Number of live points.
     bound
@@ -49,6 +71,10 @@ class NestedSampler:
     first_update
         A dictionary containing parameters governing when the sampler should first update the bounding distribution from
         the unit cube (`"none"`) to the one specified by `sample`.
+    rng
+        Random number generator for the sampling.
+    njobs
+        The number of multiprocessing jobs.
     enlarge
         Enlarge the volumes of the specified bounding object(s) by this fraction.
     bootstrap
@@ -64,31 +90,65 @@ class NestedSampler:
         The number of clustering dimensions.
     history_filename
         The filename where the history will go.
+    maxiter
+        Maximum number of iterations.
+    maxcall
+        Maximum number of likelihood evaluations.
+    dlogz
+        Iteration will stop when the estimated contribution of the remaining prior volume to the total evidence falls
+        below this threshold.
+    logl_max
+        Iteration will stop when the sampled ln(likelihood) exceeds the threshold set by `logl_max`.
+    add_live
+        Whether or not to add the remaining set of live points to the list of samples at the end of each run.
+    print_progress
+        Whether or not to output a simple summary of the current run that updates with each iteration.
+    save_bounds
+        Whether or not to save past bounding distributions used to bound the live points internally.
     """
+    if njobs > 1:
+        with dynesty.pool.Pool(njobs, likelihood.calculate_log_pdf, prior.transform) as pool:
+            sampler = dynesty.NestedSampler(
+                likelihood.calculate_log_pdf,
+                prior.transform,
+                prior.n_dim,
+                nlive=nlive,
+                bound=bound,
+                sample=sample,
+                periodic=prior.periodic_indices,
+                reflective=prior.reflective_indices,
+                update_interval=update_interval,
+                first_update=first_update,
+                rstate=rng,
+                queue_size=None,
+                pool=pool,
+                use_pool=None,
+                live_points=None,
+                enlarge=enlarge,
+                bootstrap=bootstrap,
+                walks=walks,
+                facc=facc,
+                slices=slices,
+                ncdim=ncdim,
+                blob=False,
+                save_evaluation_history=history_filename is not None,
+                history_filename=history_filename,
+            )
 
-    def __init__(
-        self,
-        likelihood: likelihood.Likelihood,
-        prior: prior.Prior,
-        rng: None | numpy.random.Generator = None,
-        nlive: int = 500,
-        bound: BOUNDARY_TYPES = "multi",
-        sample: SAMPLE_TYPES = "auto",
-        update_interval: None | int | float = None,
-        first_update: None | FirstUpdateDict = None,
-        enlarge: None | float = None,
-        bootstrap: None | int = None,
-        walks: None | int = None,
-        facc: float = 0.5,
-        slices: None | int = None,
-        ncdim: None | int = None,
-        history_filename: None | str = None,
-    ) -> None:
-        self.t_eval: None | float = benchmark(likelihood, prior, rng=rng)
-
-        self.is_restored = False
-
-        self.sampler = dynesty.NestedSampler(
+            sampler.run_nested(
+                maxiter=maxiter,
+                maxcall=maxcall,
+                dlogz=dlogz,
+                logl_max=logl_max,
+                add_live=add_live,
+                print_progress=print_progress,
+                save_bounds=save_bounds,
+                checkpoint_file=None,
+                checkpoint_every=60,
+                resume=False,
+            )
+    else:
+        sampler = dynesty.NestedSampler(
             likelihood.calculate_log_pdf,
             prior.transform,
             prior.n_dim,
@@ -115,44 +175,7 @@ class NestedSampler:
             history_filename=history_filename,
         )
 
-    def run_nested(
-        self,
-        maxiter: None | int = None,
-        maxcall: None | int = None,
-        dlogz: None | float = None,
-        logl_max: float = numpy.inf,
-        add_live: bool = True,
-        print_progress: bool = True,
-        save_bounds: bool = True,
-        checkpoint_file: None | str = None,
-        checkpoint_every: float = 60,
-    ) -> None:
-        """
-        Run the nested sampler.
-
-        Parameters
-        ----------
-        maxiter
-            Maximum number of iterations.
-        maxcall
-            Maximum number of likelihood evaluations.
-        dlogz
-            Iteration will stop when the estimated contribution of the remaining prior volume to the total evidence
-            falls below this threshold.
-        logl_max
-            Iteration will stop when the sampled ln(likelihood) exceeds the threshold set by logl_max.
-        add_live
-            Whether or not to add the remaining set of live points to the list of samples at the end of each run.
-        print_progress
-            Whether or not to output a simple summary of the current run that updates with each iteration.
-        save_bounds
-            Whether or not to save past bounding distributions used to bound the live points internally.
-        checkpoint_file
-            The state of the sampler will be saved into this file every `checkpoint_every` seconds.
-        checkpoint_every
-            The number of seconds between checkpoints that will save the internal state of the sampler.
-        """
-        self.sampler.run_nested(
+        sampler.run_nested(
             maxiter=maxiter,
             maxcall=maxcall,
             dlogz=dlogz,
@@ -160,38 +183,15 @@ class NestedSampler:
             add_live=add_live,
             print_progress=print_progress,
             save_bounds=save_bounds,
-            checkpoint_file=checkpoint_file,
-            checkpoint_every=checkpoint_every,
-            resume=self.is_restored,
+            checkpoint_file=None,
+            checkpoint_every=60,
+            resume=False,
         )
-        if print_progress:
-            print()
 
-    @classmethod
-    def restore(cls, filename: str) -> Self:
-        """
-        Restore the nested sampler from a checkpoint file.
+    if print_progress:
+        print()
 
-        Parameters
-        ----------
-        filename
-            Checkpoint filename.
-
-        Returns
-        -------
-        sampler
-            Restored nested sampler instance.
-        """
-        obj = cls.__new__(cls)
-        obj.t_eval = None
-        obj.is_restored = True
-        obj.sampler = dynesty.NestedSampler.restore(filename, pool=None)
-        return obj
-
-    @property
-    def results(self) -> dynesty.results.Results:
-        """Results of the nested sampling run."""
-        return self.sampler.results
+    return sampler.results
 
 
 def benchmark(

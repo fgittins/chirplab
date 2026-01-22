@@ -2,14 +2,13 @@
 
 from typing import TYPE_CHECKING
 
+import dynesty
 import pytest
 
 from chirplab import constants
 from chirplab.inference import distribution, likelihood, prior, sampler
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     import numpy
 
 
@@ -31,60 +30,41 @@ def prior_default() -> prior.Prior:
     )
 
 
-class TestNestedSampler:
-    """Tests for the NestedSampler class."""
+class TestRun:
+    """Tests for the run function."""
 
-    def test_initialisation(
-        self, likelihood_default: likelihood.Likelihood, prior_default: prior.Prior, rng_default: numpy.random.Generator
-    ) -> None:
-        """Test that NestedSampler can be initialised with likelihood, prior and rng."""
-        samp = sampler.NestedSampler(likelihood_default, prior_default, rng_default)
-        assert isinstance(samp.t_eval, float)
-        assert samp.is_restored is False
-        assert samp.sampler is not None
-
-    def test_initialisation_with_custom_nlive(
-        self, likelihood_default: likelihood.Likelihood, prior_default: prior.Prior, rng_default: numpy.random.Generator
-    ) -> None:
-        """Test that NestedSampler can be initialised with custom nlive parameter."""
-        nlive = 100
-        samp = sampler.NestedSampler(likelihood_default, prior_default, rng_default, nlive)
-
-        assert samp.sampler.nlive == nlive
-
-    def test_initialisation_stores_benchmark_time(
-        self, likelihood_default: likelihood.Likelihood, prior_default: prior.Prior, rng_default: numpy.random.Generator
-    ) -> None:
-        """Test that benchmark time is stored during initialisation."""
-        samp = sampler.NestedSampler(likelihood_default, prior_default, rng_default)
-
-        assert isinstance(samp.t_eval, float)
-        assert samp.t_eval > 0
-
-    def test_run_nested(
-        self, likelihood_default: likelihood.Likelihood, prior_default: prior.Prior, rng_default: numpy.random.Generator
-    ) -> None:
-        """Test that run_nested executes without errors."""
-        samp = sampler.NestedSampler(likelihood_default, prior_default, rng_default)
-        samp.run_nested(dlogz=600)
-
-        assert samp.results is not None
-
-    def test_restore(
+    def test_run_returns_results(
         self,
         likelihood_default: likelihood.Likelihood,
         prior_default: prior.Prior,
         rng_default: numpy.random.Generator,
-        tmp_path: Path,
     ) -> None:
-        """Test that NestedSampler can be restored from a checkpoint file."""
-        samp = sampler.NestedSampler(likelihood_default, prior_default, rng_default)
-        checkpoint_file = tmp_path / "checkpoint.save"
-        samp.run_nested(dlogz=600, add_live=False, checkpoint_file=str(checkpoint_file))
-        samp_restored = sampler.NestedSampler.restore(str(checkpoint_file))
+        """Test that run returns a results instance."""
+        results = sampler.run(
+            likelihood_default,
+            prior_default,
+            rng=rng_default,
+            dlogz=200,
+        )
 
-        assert samp_restored.sampler is not None
-        assert samp_restored.is_restored is True
+        assert isinstance(results, dynesty.results.Results)
+
+    def test_run_with_multiprocessing(
+        self,
+        likelihood_default: likelihood.Likelihood,
+        prior_default: prior.Prior,
+        rng_default: numpy.random.Generator,
+    ) -> None:
+        """Test that run works with multiple jobs."""
+        results = sampler.run(
+            likelihood_default,
+            prior_default,
+            rng=rng_default,
+            njobs=2,
+            dlogz=200,
+        )
+
+        assert isinstance(results, dynesty.results.Results)
 
 
 class TestBenchmark:
