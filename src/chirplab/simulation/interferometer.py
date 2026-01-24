@@ -70,8 +70,8 @@ class Interferometer:
         logger.debug(
             "Initialised interferometer: amplitude_spectral_density_file=%s, f_min=%.1f Hz, f_max=%.1f Hz",
             amplitude_spectral_density_file.name,
-            self.f[self.in_bounds_mask][0] if self.in_bounds_mask.any() else 0,
-            self.f[self.in_bounds_mask][-1] if self.in_bounds_mask.any() else 0,
+            f_min,
+            f_max,
         )
 
         self.set_data(rng, is_zero_noise)

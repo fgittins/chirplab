@@ -5,8 +5,8 @@ import numpy
 from dynesty import internal_samplers, results, utils
 from dynesty.bounding import Bound
 
-type BOUND_TYPES = Literal["none", "single", "multi", "balls", "cubes"] | Bound
-type PRINT_FUNC_TYPES = Callable[[utils.IteratorResult, int, int, int, float, float], None]
+type BoundType = Literal["none", "single", "multi", "balls", "cubes"] | Bound
+type PrintFuncType = Callable[[utils.IteratorResult, int, int, int, float, float], None]
 
 class FirstUpdateDict(TypedDict, total=False):
     min_ncall: int
@@ -67,8 +67,8 @@ class Sampler:
     saved_run: utils.RunRecord
     bound_bootstrap: None | int
     bound_enlarge: None | float
-    bounding: BOUND_TYPES
-    bound_next: BOUND_TYPES
+    bounding: BoundType
+    bound_next: BoundType
     @overload
     def __init__(
         self,
@@ -81,7 +81,7 @@ class Sampler:
             numpy.typing.NDArray[numpy.floating],
         ],
         sampling: internal_samplers.InternalSampler,
-        bounding: BOUND_TYPES,
+        bounding: BoundType,
         ncdim: None | int = None,
         rstate: None | numpy.random.Generator = None,
         pool: Any = None,
@@ -108,7 +108,7 @@ class Sampler:
             numpy.typing.NDArray[numpy.floating],
         ],
         sampling: internal_samplers.InternalSampler,
-        bounding: BOUND_TYPES,
+        bounding: BoundType,
         ncdim: None | int = None,
         rstate: None | numpy.random.Generator = None,
         pool: Any = None,
@@ -154,7 +154,7 @@ class Sampler:
         logl_max: None | float = numpy.inf,
         add_live: bool = True,
         print_progress: bool = True,
-        print_func: None | PRINT_FUNC_TYPES = None,
+        print_func: None | PrintFuncType = None,
         save_bounds: bool = True,
         checkpoint_file: None | str = None,
         checkpoint_every: float = 60,

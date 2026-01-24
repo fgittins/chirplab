@@ -9,7 +9,7 @@ from scipy import integrate, interpolate, special
 
 from chirplab import constants
 
-type BOUNDARY_TYPES = None | Literal["periodic", "reflective"]
+type BoundaryType = None | Literal["periodic", "reflective"]
 
 
 class Distribution(ABC):
@@ -22,14 +22,18 @@ class Distribution(ABC):
         Boundary condition for the probability distribution.
     """
 
-    def __init__(self, boundary: BOUNDARY_TYPES = None) -> None:
-        is_periodic = is_reflective = False
-        if boundary == "periodic":
-            is_periodic = True
-        elif boundary == "reflective":
-            is_reflective = True
-        self.is_periodic = is_periodic
-        self.is_reflective = is_reflective
+    def __init__(self, boundary: BoundaryType = None) -> None:
+        self.boundary = boundary
+
+    @property
+    def is_periodic(self) -> bool:
+        """Return whether the distribution has periodic boundary conditions."""
+        return self.boundary == "periodic"
+
+    @property
+    def is_reflective(self) -> bool:
+        """Return whether the distribution has reflective boundary conditions."""
+        return self.boundary == "reflective"
 
     @abstractmethod
     def calculate_ppf(self, q: float) -> float:
@@ -114,7 +118,7 @@ class Uniform(Distribution):
         Boundary condition for the probability distribution.
     """
 
-    def __init__(self, x_min: float, x_max: float, boundary: BOUNDARY_TYPES = None) -> None:
+    def __init__(self, x_min: float, x_max: float, boundary: BoundaryType = None) -> None:
         super().__init__(boundary)
         self.x_min = x_min
         self.x_max = x_max
@@ -151,7 +155,7 @@ class Cosine(Distribution):
     """
 
     def __init__(
-        self, x_min: float = -constants.PI / 2, x_max: float = constants.PI / 2, boundary: BOUNDARY_TYPES = None
+        self, x_min: float = -constants.PI / 2, x_max: float = constants.PI / 2, boundary: BoundaryType = None
     ) -> None:
         super().__init__(boundary)
         self.x_min = x_min
@@ -191,7 +195,7 @@ class Sine(Distribution):
         Boundary condition for the probability distribution.
     """
 
-    def __init__(self, x_min: float = 0, x_max: float = constants.PI, boundary: BOUNDARY_TYPES = None) -> None:
+    def __init__(self, x_min: float = 0, x_max: float = constants.PI, boundary: BoundaryType = None) -> None:
         super().__init__(boundary)
         self.x_min = x_min
         self.x_max = x_max
@@ -230,7 +234,7 @@ class Gaussian(Distribution):
         Boundary condition for the probability distribution.
     """
 
-    def __init__(self, mu: float = 0, sigma: float = 1, boundary: BOUNDARY_TYPES = None) -> None:
+    def __init__(self, mu: float = 0, sigma: float = 1, boundary: BoundaryType = None) -> None:
         super().__init__(boundary)
         self.mu = mu
         self.sigma = sigma
@@ -275,7 +279,7 @@ class UniformComovingVolume(Distribution):
     [1]  <https://docs.astropy.org/en/stable/cosmology/realizations.html>.
     """
 
-    def __init__(self, r_min: float, r_max: float, boundary: BOUNDARY_TYPES = None) -> None:
+    def __init__(self, r_min: float, r_max: float, boundary: BoundaryType = None) -> None:
         super().__init__(boundary)
         self.r_min = r_min
         self.r_max = r_max

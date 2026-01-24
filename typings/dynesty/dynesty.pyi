@@ -4,7 +4,7 @@ from typing import Any, Concatenate, Literal, Self
 import numpy
 from dynesty import internal_samplers, sampler
 
-type SAMPLING_TYPES = Literal["auto", "unif", "rwalk", "slice", "rslice"] | internal_samplers.InternalSampler
+type SampleType = Literal["auto", "unif", "rwalk", "slice", "rslice"] | internal_samplers.InternalSampler
 
 class NestedSampler(sampler.Sampler):
     def __new__(
@@ -15,8 +15,8 @@ class NestedSampler(sampler.Sampler):
         ],
         ndim: int,
         nlive: int = 500,
-        bound: sampler.BOUND_TYPES = "multi",
-        sample: SAMPLING_TYPES = "auto",
+        bound: sampler.BoundType = "multi",
+        sample: SampleType = "auto",
         periodic: None | Iterable[int] = None,
         reflective: None | Iterable[int] = None,
         update_interval: None | int | float = None,

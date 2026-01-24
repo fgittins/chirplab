@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
     from chirplab.inference import likelihood, prior
 
-type BOUNDARY_TYPES = Literal["none", "single", "multi", "balls", "cubes"] | dynesty.bounding.Bound
-type SAMPLE_TYPES = Literal["auto", "unif", "rwalk", "slice", "rslice"] | internal_samplers.InternalSampler
+type BoundaryType = Literal["none", "single", "multi", "balls", "cubes"] | dynesty.bounding.Bound
+type SampleType = Literal["auto", "unif", "rwalk", "slice", "rslice"] | internal_samplers.InternalSampler
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +30,8 @@ def run(
     likelihood: likelihood.Likelihood,
     prior: prior.Prior,
     nlive: int = 500,
-    bound: BOUNDARY_TYPES = "multi",
-    sample: SAMPLE_TYPES = "auto",
+    bound: BoundaryType = "multi",
+    sample: SampleType = "auto",
     update_interval: None | int | float = None,
     first_update: None | FirstUpdateDict = None,
     rng: None | numpy.random.Generator = None,

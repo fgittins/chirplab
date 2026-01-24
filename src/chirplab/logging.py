@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from pathlib import Path
 
-type LEVEL_TYPES = Literal["info", "debug"]
+type LevelType = Literal["info", "debug"]
 
 
 def get_logger(
-    level: LEVEL_TYPES = "info",
+    level: LevelType = "info",
     fmt: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     filename: None | str | Path = None,
 ) -> logging.Logger:
