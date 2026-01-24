@@ -1,5 +1,6 @@
 """Module for sampling algorithms."""
 
+import logging
 import time
 from typing import TYPE_CHECKING, Literal, TypedDict
 
@@ -13,6 +14,8 @@ if TYPE_CHECKING:
 
 type BOUNDARY_TYPES = Literal["none", "single", "multi", "balls", "cubes"] | dynesty.bounding.Bound
 type SAMPLE_TYPES = Literal["auto", "unif", "rwalk", "slice", "rslice"] | internal_samplers.InternalSampler
+
+logger = logging.getLogger(__name__)
 
 
 class FirstUpdateDict(TypedDict, total=False):
@@ -104,7 +107,38 @@ def run(
     save_bounds
         Whether or not to save past bounding distributions used to bound the live points internally.
     """
+    t = benchmark(likelihood, prior)
+
+    logger.info(
+        "Starting nested sampling with arguments: "
+        "nlive=%d, bound='%s', sample='%s', periodic_indices=%s, reflective_indices=%s, update_interval=%s, "
+        "first_update=%s, rng=%s, enlarge=%s, bootstrap=%s, walks=%s, facc=%s, slices=%s, ncdim=%s, "
+        "history_filename=%s",
+        nlive,
+        bound,
+        sample,
+        prior.periodic_indices,
+        prior.reflective_indices,
+        update_interval,
+        first_update,
+        rng,
+        enlarge,
+        bootstrap,
+        walks,
+        facc,
+        slices,
+        ncdim,
+        history_filename,
+    )
+    logger.info("Likelihood function: %s", likelihood)
+    logger.info("Prior distribution: %s", prior)
+    logger.debug("Likelihood benchmark: average log-likelihood evaluation time = %.3e s", t)
+
+    t_1 = time.time()
+
     if njobs > 1:
+        logger.info("Initialising multiprocessing pool with %d jobs", njobs)
+
         with dynesty.pool.Pool(njobs, likelihood.calculate_log_pdf, prior.transform) as pool:
             sampler = dynesty.NestedSampler(
                 likelihood.calculate_log_pdf,
@@ -133,6 +167,8 @@ def run(
                 history_filename=history_filename,
             )
 
+            logger.info("Starting nested sampling run (multiprocessing mode)")
+
             sampler.run_nested(
                 maxiter=maxiter,
                 maxcall=maxcall,
@@ -146,6 +182,8 @@ def run(
                 resume=False,
             )
     else:
+        logger.info("Running in single-process mode")
+
         sampler = dynesty.NestedSampler(
             likelihood.calculate_log_pdf,
             prior.transform,
@@ -173,6 +211,8 @@ def run(
             history_filename=history_filename,
         )
 
+        logger.info("Starting nested sampling run (single-process mode)")
+
         sampler.run_nested(
             maxiter=maxiter,
             maxcall=maxcall,
@@ -186,10 +226,24 @@ def run(
             resume=False,
         )
 
+    t_2 = time.time()
+
     if print_progress:
         print()
 
-    return sampler.results
+    results = sampler.results
+
+    logger.info(
+        "Nested sampling completed in %.2f s: niter=%d, ncall=%d, eff(%%)=%6.3f, logz=%6.3f +/- %6.3f",
+        t_2 - t_1,
+        results.niter,
+        numpy.sum(results.ncall),
+        results.eff,
+        results.logz[-1],
+        results.logzerr[-1],
+    )
+
+    return results
 
 
 def benchmark(

@@ -1,5 +1,6 @@
 """Module for gravitational-waveform models."""
 
+import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -9,6 +10,8 @@ from chirplab import constants
 
 if TYPE_CHECKING:
     from chirplab.simulation import parameters
+
+logger = logging.getLogger(__name__)
 
 
 class WaveformModel(ABC):
@@ -71,6 +74,11 @@ class NewtonianWaveformModel(WaveformModel):
     def __init__(self, f_max: float = constants.INF, is_isco_cutoff: bool = True) -> None:
         super().__init__(f_max)
         self.is_isco_cutoff = is_isco_cutoff
+        logger.debug(
+            "Initialised NewtonianWaveformModel: f_max=%.1f Hz, is_isco_cutoff=%s",
+            f_max,
+            is_isco_cutoff,
+        )
 
     def calculate_strain_polarisations(
         self, f: numpy.typing.NDArray[numpy.floating], theta: parameters.WaveformParameters

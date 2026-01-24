@@ -1,5 +1,6 @@
 """Module for likelihood functions."""
 
+import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -11,6 +12,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from chirplab.simulation import interferometer, parameters, waveform
+
+logger = logging.getLogger(__name__)
 
 
 class Likelihood(ABC):
@@ -76,6 +79,15 @@ class GravitationalWaveLikelihood(Likelihood):
             self.s_inner_s.append(
                 interferometer.calculate_inner_product(interferometer.s_tilde, interferometer.s_tilde).real
             )
+
+        logger.info(
+            "Initialised GravitationalWaveLikelihood: interferometers=%s, model=%s, vector_to_parameters=%s, is_normalised=%s",
+            interferometers,
+            model,
+            vector_to_parameters,
+            is_normalised,
+        )
+        logger.debug("Noise log-likelihood: ln_l_noise=%.4f", self.ln_l_noise)
 
     def calculate_log_pdf(self, x: numpy.typing.NDArray[numpy.floating]) -> numpy.float64:
         """

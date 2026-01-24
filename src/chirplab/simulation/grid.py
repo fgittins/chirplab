@@ -1,8 +1,11 @@
 """Module for signal sampling grid."""
 
+import logging
 from dataclasses import dataclass
 
 import numpy
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,11 +28,23 @@ class Grid:
         """Validate parameters after initialisation."""
         if not (self.t_d * self.f_s).is_integer():
             msg = "The product of t_d and f_s must be an integer."
+            logger.error(msg)
             raise ValueError(msg)
 
         if self.n % 2 != 0:
             msg = "The product of t_d and f_s must be even."
+            logger.error(msg)
             raise ValueError(msg)
+
+        logger.debug(
+            "Initialised Grid: t_d=%.2f s, f_s=%.1f Hz, n=%d, m=%d, delta_t=%.2e s, delta_f=%.2e Hz",
+            self.t_d,
+            self.f_s,
+            self.n,
+            self.m,
+            self.delta_t,
+            self.delta_f,
+        )
 
     @property
     def f_max(self) -> float:

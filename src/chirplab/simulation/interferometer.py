@@ -1,5 +1,6 @@
 """Module for gravitational-wave interferometers."""
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
@@ -9,6 +10,8 @@ from chirplab import constants
 
 if TYPE_CHECKING:
     from chirplab.simulation import grid, parameters, waveform
+
+logger = logging.getLogger(__name__)
 
 GEOCENTRE: Final[numpy.typing.NDArray[numpy.float64]] = numpy.array([0, 0, 0], dtype=numpy.float64)
 """Geocentre position vector (m)."""
@@ -64,6 +67,13 @@ class Interferometer:
         self.s_n = numpy.interp(self.f, f, amplitude_spectral_density**2)
         self.s_n[~self.in_bounds_mask] = constants.INF
 
+        logger.debug(
+            "Initialised interferometer: amplitude_spectral_density_file=%s, f_min=%.1f Hz, f_max=%.1f Hz",
+            amplitude_spectral_density_file.name,
+            self.f[self.in_bounds_mask][0] if self.in_bounds_mask.any() else 0,
+            self.f[self.in_bounds_mask][-1] if self.in_bounds_mask.any() else 0,
+        )
+
         self.set_data(rng, is_zero_noise)
 
     def set_data(self, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
@@ -77,6 +87,8 @@ class Interferometer:
         is_zero_noise
             Whether to use zero noise realisation.
         """
+        logger.debug("Set interferometer data: rng=%s, is_zero_noise=%s", rng, is_zero_noise)
+
         # TODO: adapt this method to load real data
         n_tilde = numpy.zeros_like(self.f, numpy.complex128)
 
@@ -229,6 +241,8 @@ class Interferometer:
         rho_mf
             Matched-filter signal-to-noise ratio.
         """
+        logger.info("Injecting signal: model=%s, theta=%s", model, theta)
+
         h_tilde = self.calculate_strain(model, theta)
 
         self.s_tilde += h_tilde
@@ -236,6 +250,8 @@ class Interferometer:
 
         rho_opt = self.calculate_optimal_signal_to_noise_ratio(h_tilde)
         rho_mf = self.calculate_matched_filter_signal_to_noise_ratio(h_tilde)
+
+        logger.info("Injected signal: rho_opt=%.2f, rho_mf=%.2f%+.2fj", rho_opt, rho_mf.real, rho_mf.imag)
 
         return h_tilde, rho_opt, rho_mf
 
@@ -273,6 +289,8 @@ class LHO(Interferometer):
         )
         super().__init__(grid, PWD / "data/aligo_O4high.txt", 20, 2048, x, d, rng, is_zero_noise)
 
+        logger.info("Initialised LIGO Hanford interferometer")
+
 
 class LLO(Interferometer):
     """
@@ -306,6 +324,8 @@ class LLO(Interferometer):
             ]
         )
         super().__init__(grid, PWD / "data/aligo_O4high.txt", 20, 2048, x, d, rng, is_zero_noise)
+
+        logger.info("Initialised LIGO Livingston interferometer")
 
 
 def calculate_inner_product(
