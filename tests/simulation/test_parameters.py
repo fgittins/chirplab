@@ -1,6 +1,6 @@
 """Tests for the parameters module."""
 
-import pytest
+import numpy
 
 from chirplab import constants
 from chirplab.simulation import parameters
@@ -68,14 +68,6 @@ class TestSignalParameters:
         assert theta_default.m_chirp == (theta_default.m_1 * theta_default.m_2) ** (3 / 5) / (
             theta_default.m_1 + theta_default.m_2
         ) ** (1 / 5)
-
-    def test_implementation_errors(self, theta_default: parameters.SignalParameters) -> None:
-        """Test that NotImplementedError is raised for alpha and delta properties."""
-        with pytest.raises(NotImplementedError, match="Right ascension not implemented."):
-            _ = theta_default.alpha
-
-        with pytest.raises(NotImplementedError, match="Declination not implemented."):
-            _ = theta_default.delta
-
-        with pytest.raises(NotImplementedError, match="Greenwich mean sidereal time not implemented."):
-            _ = theta_default.gmst
+        assert numpy.isclose(theta_default.alpha, 2.620830242272142)
+        assert theta_default.delta == constants.PI / 2 - theta_default.theta
+        assert numpy.isclose(theta_default.gmst, 1.8354320788746938)

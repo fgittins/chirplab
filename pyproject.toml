@@ -91,3 +91,7 @@ strict_equality = true
 strict_bytes = true
 # Miscellaneous
 warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["astropy.*"]
+ignore_missing_imports = true

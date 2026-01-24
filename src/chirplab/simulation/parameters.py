@@ -1,8 +1,14 @@
 """Module for gravitational-wave parameters."""
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-# TODO: introduce celestial coordinates
+from astropy import time
+
+from chirplab import constants
+
+if TYPE_CHECKING:
+    import numpy
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +50,9 @@ class WaveformParameters:
         return self.m_1 + self.m_2
 
 
+# TODO: add functionality to initialise with celestial coordinates
+
+
 @dataclass(frozen=True, slots=True)
 class SignalParameters(WaveformParameters):
     """
@@ -78,17 +87,16 @@ class SignalParameters(WaveformParameters):
     @property
     def alpha(self) -> float:
         """Right ascension of the binary in the geocentric frame (rad)."""
-        msg = "Right ascension not implemented."
-        raise NotImplementedError(msg)
+        return self.phi + self.gmst
 
     @property
     def delta(self) -> float:
         """Declination of the binary in the geocentric frame (rad)."""
-        msg = "Declination not implemented."
-        raise NotImplementedError(msg)
+        return constants.PI / 2 - self.theta
 
     @property
     def gmst(self) -> float:
         """Greenwich mean sidereal time at coalescence (rad)."""
-        msg = "Greenwich mean sidereal time not implemented."
-        raise NotImplementedError(msg)
+        t = time.Time(self.t_c, format="gps", scale="utc")
+        gmst: numpy.float64 = t.sidereal_time("mean", "greenwich").to_value(unit="rad")
+        return gmst
