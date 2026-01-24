@@ -11,7 +11,7 @@ type LevelType = Literal["info", "debug"]
 
 def get_logger(
     level: LevelType = "info",
-    fmt: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    fmt: str = "[%(asctime)s] %(levelname)-8s %(message)s",
     filename: None | str | Path = None,
 ) -> logging.Logger:
     """

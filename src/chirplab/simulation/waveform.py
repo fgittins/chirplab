@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# TODO: interface with lalsimulation for more advanced waveform models
+
 
 class WaveformModel(ABC):
     """

@@ -5,9 +5,12 @@ import time
 from typing import TYPE_CHECKING, Literal, TypedDict
 
 import dynesty
+import h5py  # type: ignore[import-untyped]
 import numpy
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from dynesty import internal_samplers
 
     from chirplab.inference import likelihood, prior
@@ -42,7 +45,6 @@ def run(
     facc: float = 0.5,
     slices: None | int = None,
     ncdim: None | int = None,
-    history_filename: None | str = None,
     maxiter: None | int = None,
     maxcall: None | int = None,
     dlogz: None | float = None,
@@ -50,6 +52,7 @@ def run(
     add_live: bool = True,
     print_progress: bool = True,
     save_bounds: bool = True,
+    results_filename: None | str | Path = None,
 ) -> dynesty.results.Results:
     """
     Run the nested sampler.
@@ -89,8 +92,6 @@ def run(
         a new live point.
     ncdim
         The number of clustering dimensions.
-    history_filename
-        The filename where the history will go.
     maxiter
         Maximum number of iterations.
     maxcall
@@ -106,6 +107,8 @@ def run(
         Whether or not to output a simple summary of the current run that updates with each iteration.
     save_bounds
         Whether or not to save past bounding distributions used to bound the live points internally.
+    results_filename
+        The filename where the results will be saved.
     """
     t = benchmark(likelihood, prior)
 
@@ -113,7 +116,8 @@ def run(
         "Starting nested sampling with arguments: "
         "nlive=%d, bound='%s', sample='%s', periodic_indices=%s, reflective_indices=%s, update_interval=%s, "
         "first_update=%s, rng=%s, enlarge=%s, bootstrap=%s, walks=%s, facc=%s, slices=%s, ncdim=%s, "
-        "history_filename=%s",
+        "maxiter=%s, maxcall=%s, dlogz=%s, logl_max=%s, add_live=%s, print_progress=%s, save_bounds=%s, "
+        "results_filename=%s",
         nlive,
         bound,
         sample,
@@ -128,7 +132,14 @@ def run(
         facc,
         slices,
         ncdim,
-        history_filename,
+        maxiter,
+        maxcall,
+        dlogz,
+        logl_max,
+        add_live,
+        print_progress,
+        save_bounds,
+        results_filename,
     )
     logger.info("Likelihood function: %s", likelihood)
     logger.info("Prior distribution: %s", prior)
@@ -163,8 +174,8 @@ def run(
                 slices=slices,
                 ncdim=ncdim,
                 blob=False,
-                save_evaluation_history=history_filename is not None,
-                history_filename=history_filename,
+                save_evaluation_history=False,
+                history_filename=None,
             )
 
             logger.info("Starting nested sampling run (multiprocessing mode)")
@@ -207,8 +218,8 @@ def run(
             slices=slices,
             ncdim=ncdim,
             blob=False,
-            save_evaluation_history=history_filename is not None,
-            history_filename=history_filename,
+            save_evaluation_history=False,
+            history_filename=None,
         )
 
         logger.info("Starting nested sampling run (single-process mode)")
@@ -242,6 +253,28 @@ def run(
         results.logz[-1],
         results.logzerr[-1],
     )
+
+    # TODO: create object to save and load results
+    if results_filename is not None:
+        with h5py.File(results_filename, "w") as f:
+            f.create_dataset("logl", data=results.logl)
+            f.create_dataset("samples_it", data=results.samples_it)
+            f.create_dataset("samples_id", data=results.samples_id)
+            f.create_dataset("samples_u", data=results.samples_u)
+            f.create_dataset("samples", data=results.samples)
+            f.create_dataset("ncall", data=results.ncall)
+            f.create_dataset("logz", data=results.logz)
+            f.create_dataset("logzerr", data=results.logzerr)
+            f.create_dataset("logwt", data=results.logwt)
+            f.create_dataset("eff", data=results.eff)
+            f.create_dataset("nlive", data=results.nlive)
+            f.create_dataset("logvol", data=results.logvol)
+            f.create_dataset("information", data=results.information)
+            f.create_dataset("bound_iter", data=results.bound_iter)
+            f.create_dataset("samples_bound", data=results.samples_bound)
+            f.create_dataset("scale", data=results.scale)
+
+        logger.info("Saved sampling results to '%s'", results_filename)
 
     return results
 
