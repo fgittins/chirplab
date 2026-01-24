@@ -47,8 +47,6 @@ def run(
     add_live: bool = True,
     print_progress: bool = True,
     save_bounds: bool = True,
-    checkpoint_file: None | str = None,
-    checkpoint_every: float = 60,
 ) -> dynesty.results.Results:
     """
     Run the nested sampler.
