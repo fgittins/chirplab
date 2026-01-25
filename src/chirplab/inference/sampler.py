@@ -29,6 +29,9 @@ class FirstUpdateDict(TypedDict, total=False):
 
 
 # TODO: add checkpointing
+# TODO: adjust printing frequency
+
+
 def run(
     likelihood: likelihood.Likelihood,
     prior: prior.Prior,

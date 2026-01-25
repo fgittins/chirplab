@@ -19,6 +19,8 @@ D: Final[numpy.typing.NDArray[numpy.float64]] = 1 / 2 * numpy.array([[1, 0, 0], 
 """Default response tensor in the geocentric frame."""
 PWD = Path(__file__).parent
 
+# TODO: add Virgo and KAGRA interferometers
+
 
 class Interferometer:
     """
