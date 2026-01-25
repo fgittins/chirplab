@@ -1,16 +1,16 @@
 """Module for sampling algorithms."""
 
+import contextlib
 import logging
 import time
-from typing import TYPE_CHECKING, Literal, TypedDict
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Final, Literal, TypedDict
 
 import dynesty
 import h5py  # type: ignore[import-untyped]
 import numpy
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from dynesty import internal_samplers
 
     from chirplab.inference import likelihood, prior
@@ -20,6 +20,25 @@ type SampleType = Literal["auto", "unif", "rwalk", "slice", "rslice"] | internal
 
 logger = logging.getLogger(__name__)
 
+_RESULTS_DATASETS: Final = (
+    "logl",
+    "samples_it",
+    "samples_id",
+    "samples_u",
+    "samples",
+    "ncall",
+    "logz",
+    "logzerr",
+    "logwt",
+    "eff",
+    "nlive",
+    "logvol",
+    "information",
+    "bound_iter",
+    "samples_bound",
+    "scale",
+)
+
 
 class FirstUpdateDict(TypedDict, total=False):
     """Dictionary for first update parameters."""
@@ -28,7 +47,6 @@ class FirstUpdateDict(TypedDict, total=False):
     min_eff: float
 
 
-# TODO: add checkpointing
 # TODO: adjust printing frequency
 
 
@@ -55,7 +73,10 @@ def run(
     add_live: bool = True,
     print_progress: bool = True,
     save_bounds: bool = True,
-    results_filename: None | str | Path = None,
+    checkpoint_file: None | str = None,
+    checkpoint_every: int = 60,
+    resume: bool = True,
+    results_filename: None | str = None,
 ) -> dynesty.results.Results:
     """
     Run the nested sampler.
@@ -110,135 +131,91 @@ def run(
         Whether or not to output a simple summary of the current run that updates with each iteration.
     save_bounds
         Whether or not to save past bounding distributions used to bound the live points internally.
+    checkpoint_file
+        The state of the sampler will be saved into this file every `checkpoint_every` seconds.
+    checkpoint_every
+        The number of seconds between checkpoints that will save the internal state of the sampler.
+    resume
+        Whether to resume the sampler from a previous checkpoint file.
     results_filename
         The filename where the results will be saved.
     """
+    sampler_kwargs: dict[str, Any] = {
+        "nlive": nlive,
+        "bound": bound,
+        "sample": sample,
+        "periodic": prior.periodic_indices,
+        "reflective": prior.reflective_indices,
+        "update_interval": update_interval,
+        "first_update": first_update,
+        "rstate": rng,
+        "enlarge": enlarge,
+        "bootstrap": bootstrap,
+        "walks": walks,
+        "facc": facc,
+        "slices": slices,
+        "ncdim": ncdim,
+    }
+
+    run_kwargs: dict[str, Any] = {
+        "maxiter": maxiter,
+        "maxcall": maxcall,
+        "dlogz": dlogz,
+        "logl_max": logl_max,
+        "add_live": add_live,
+        "print_progress": print_progress,
+        "save_bounds": save_bounds,
+        "checkpoint_file": checkpoint_file,
+        "checkpoint_every": checkpoint_every,
+        "resume": resume,
+    }
+
+    _log_run_parameters(
+        likelihood=likelihood,
+        prior=prior,
+        **sampler_kwargs,
+        **run_kwargs,
+        results_filename=results_filename,
+    )
+
     t = benchmark(likelihood, prior)
 
-    logger.info(
-        "Starting nested sampling with arguments: "
-        "nlive=%d, bound='%s', sample='%s', periodic_indices=%s, reflective_indices=%s, update_interval=%s, "
-        "first_update=%s, rng=%s, enlarge=%s, bootstrap=%s, walks=%s, facc=%s, slices=%s, ncdim=%s, "
-        "maxiter=%s, maxcall=%s, dlogz=%s, logl_max=%s, add_live=%s, print_progress=%s, save_bounds=%s, "
-        "results_filename=%s",
-        nlive,
-        bound,
-        sample,
-        prior.periodic_indices,
-        prior.reflective_indices,
-        update_interval,
-        first_update,
-        rng,
-        enlarge,
-        bootstrap,
-        walks,
-        facc,
-        slices,
-        ncdim,
-        maxiter,
-        maxcall,
-        dlogz,
-        logl_max,
-        add_live,
-        print_progress,
-        save_bounds,
-        results_filename,
-    )
-    logger.info("Likelihood function: %s", likelihood)
-    logger.info("Prior distribution: %s", prior)
     logger.debug("Likelihood benchmark: average log-likelihood evaluation time = %.3e s", t)
+
+    is_multiprocessed = njobs > 1
+    is_resumed = resume and checkpoint_file is not None and Path(checkpoint_file).is_file()
+
+    pool_context = (
+        dynesty.pool.Pool(njobs, likelihood.calculate_log_pdf, prior.transform)
+        if is_multiprocessed
+        else contextlib.nullcontext()
+    )
+
+    if is_multiprocessed:
+        logger.info("Initialising multiprocessing pool with %d jobs", njobs)
 
     t_1 = time.time()
 
-    if njobs > 1:
-        logger.info("Initialising multiprocessing pool with %d jobs", njobs)
+    with pool_context as pool:
+        if is_resumed:
+            assert checkpoint_file is not None
+            sampler = dynesty.NestedSampler.restore(checkpoint_file, pool=pool)
 
-        with dynesty.pool.Pool(njobs, likelihood.calculate_log_pdf, prior.transform) as pool:
+            logger.info("Resumed nested sampling run from checkpoint file '%s'", checkpoint_file)
+        else:
             sampler = dynesty.NestedSampler(
                 likelihood.calculate_log_pdf,
                 prior.transform,
                 prior.n_dim,
-                nlive=nlive,
-                bound=bound,
-                sample=sample,
-                periodic=prior.periodic_indices,
-                reflective=prior.reflective_indices,
-                update_interval=update_interval,
-                first_update=first_update,
-                rstate=rng,
-                queue_size=None,
                 pool=pool,
-                use_pool=None,
-                live_points=None,
-                enlarge=enlarge,
-                bootstrap=bootstrap,
-                walks=walks,
-                facc=facc,
-                slices=slices,
-                ncdim=ncdim,
-                blob=False,
-                save_evaluation_history=False,
-                history_filename=None,
+                **sampler_kwargs,
             )
 
-            logger.info("Starting nested sampling run (multiprocessing mode)")
+        mode = "multiprocessing" if is_multiprocessed else "single-process"
 
-            sampler.run_nested(
-                maxiter=maxiter,
-                maxcall=maxcall,
-                dlogz=dlogz,
-                logl_max=logl_max,
-                add_live=add_live,
-                print_progress=print_progress,
-                save_bounds=save_bounds,
-                checkpoint_file=None,
-                checkpoint_every=60,
-                resume=False,
-            )
-    else:
-        logger.info("Running in single-process mode")
+        logger.info("Starting nested sampling run (%s mode)", mode)
 
-        sampler = dynesty.NestedSampler(
-            likelihood.calculate_log_pdf,
-            prior.transform,
-            prior.n_dim,
-            nlive=nlive,
-            bound=bound,
-            sample=sample,
-            periodic=prior.periodic_indices,
-            reflective=prior.reflective_indices,
-            update_interval=update_interval,
-            first_update=first_update,
-            rstate=rng,
-            queue_size=None,
-            pool=None,
-            use_pool=None,
-            live_points=None,
-            enlarge=enlarge,
-            bootstrap=bootstrap,
-            walks=walks,
-            facc=facc,
-            slices=slices,
-            ncdim=ncdim,
-            blob=False,
-            save_evaluation_history=False,
-            history_filename=None,
-        )
-
-        logger.info("Starting nested sampling run (single-process mode)")
-
-        sampler.run_nested(
-            maxiter=maxiter,
-            maxcall=maxcall,
-            dlogz=dlogz,
-            logl_max=logl_max,
-            add_live=add_live,
-            print_progress=print_progress,
-            save_bounds=save_bounds,
-            checkpoint_file=None,
-            checkpoint_every=60,
-            resume=False,
-        )
+        sampler.run_nested(**run_kwargs)
 
     t_2 = time.time()
 
@@ -246,10 +223,26 @@ def run(
         print()
 
     results = sampler.results
+    _log_results_summary(results, t_2 - t_1)
 
+    if results_filename is not None:
+        _save_results(results, results_filename)
+
+    return results
+
+
+def _log_run_parameters(likelihood: likelihood.Likelihood, prior: prior.Prior, **kwargs: object) -> None:
+    args = ", ".join(f"{k}={v!r}" for k, v in kwargs.items())
+
+    logger.info("Starting nested sampling with arguments: %s", args)
+    logger.info("Likelihood function: %s", likelihood)
+    logger.info("Prior distribution: %s", prior)
+
+
+def _log_results_summary(results: dynesty.results.Results, t_elapsed: float) -> None:
     logger.info(
         "Nested sampling completed in %.2f s: niter=%d, ncall=%d, eff(%%)=%6.3f, logz=%6.3f +/- %6.3f",
-        t_2 - t_1,
+        t_elapsed,
         results.niter,
         numpy.sum(results.ncall),
         results.eff,
@@ -257,33 +250,17 @@ def run(
         results.logzerr[-1],
     )
 
-    # TODO: create object to save and load results
-    if results_filename is not None:
-        with h5py.File(results_filename, "w") as f:
-            f.create_dataset("logl", data=results.logl)
-            f.create_dataset("samples_it", data=results.samples_it)
-            f.create_dataset("samples_id", data=results.samples_id)
-            f.create_dataset("samples_u", data=results.samples_u)
-            f.create_dataset("samples", data=results.samples)
-            f.create_dataset("ncall", data=results.ncall)
-            f.create_dataset("logz", data=results.logz)
-            f.create_dataset("logzerr", data=results.logzerr)
-            f.create_dataset("logwt", data=results.logwt)
-            f.create_dataset("eff", data=results.eff)
-            f.create_dataset("nlive", data=results.nlive)
-            f.create_dataset("logvol", data=results.logvol)
-            f.create_dataset("information", data=results.information)
-            f.create_dataset("bound_iter", data=results.bound_iter)
-            f.create_dataset("samples_bound", data=results.samples_bound)
-            f.create_dataset("scale", data=results.scale)
 
-        logger.info("Saved sampling results to '%s'", results_filename)
+def _save_results(results: dynesty.results.Results, filename: str) -> None:
+    with h5py.File(filename, "w") as f:
+        for name in _RESULTS_DATASETS:
+            f.create_dataset(name, data=getattr(results, name))
 
-    return results
+    logger.info("Saved sampling results to '%s'", filename)
 
 
 def benchmark(
-    likelihood: likelihood.Likelihood, prior: prior.Prior, n: int = 1_000, rng: None | numpy.random.Generator = None
+    likelihood: likelihood.Likelihood, prior: prior.Prior, n: int = 1_000, rng: numpy.random.Generator | None = None
 ) -> float:
     """
     Benchmark the log of the likelihood function evaluation time.
@@ -306,9 +283,9 @@ def benchmark(
     """
     x_list = [prior.sample(rng) for _ in range(n)]
 
-    t_i = time.time()
+    t_1 = time.time()
     for x in x_list:
         likelihood.calculate_log_pdf(x)
-    t_f = time.time()
+    t_2 = time.time()
 
-    return (t_f - t_i) / n
+    return (t_2 - t_1) / n

@@ -9,6 +9,8 @@ from chirplab import constants
 from chirplab.inference import distribution, likelihood, prior, sampler
 
 if TYPE_CHECKING:
+    import pathlib
+
     import numpy
 
 
@@ -34,37 +36,59 @@ class TestRun:
     """Tests for the run function."""
 
     def test_run_returns_results(
-        self,
-        likelihood_default: likelihood.Likelihood,
-        prior_default: prior.Prior,
-        rng_default: numpy.random.Generator,
+        self, likelihood_default: likelihood.Likelihood, prior_default: prior.Prior, rng_default: numpy.random.Generator
     ) -> None:
         """Test that run returns a results instance."""
-        results = sampler.run(
-            likelihood_default,
-            prior_default,
-            rng=rng_default,
-            dlogz=200,
-        )
+        results = sampler.run(likelihood_default, prior_default, rng=rng_default, maxiter=100)
 
         assert isinstance(results, dynesty.results.Results)
 
     def test_run_with_multiprocessing(
+        self, likelihood_default: likelihood.Likelihood, prior_default: prior.Prior, rng_default: numpy.random.Generator
+    ) -> None:
+        """Test that run works with multiple jobs."""
+        results = sampler.run(likelihood_default, prior_default, rng=rng_default, njobs=2, maxiter=100)
+
+        assert isinstance(results, dynesty.results.Results)
+
+    def test_resume(
         self,
         likelihood_default: likelihood.Likelihood,
         prior_default: prior.Prior,
         rng_default: numpy.random.Generator,
+        tmp_path: pathlib.Path,
     ) -> None:
-        """Test that run works with multiple jobs."""
-        results = sampler.run(
+        """Test that resuming from a checkpoint works."""
+        checkpoint_file = tmp_path / "checkpoint.save"
+        results_1 = sampler.run(
             likelihood_default,
             prior_default,
             rng=rng_default,
-            njobs=2,
-            dlogz=200,
+            maxiter=50,
+            add_live=False,
+            checkpoint_file=str(checkpoint_file),
         )
 
-        assert isinstance(results, dynesty.results.Results)
+        assert checkpoint_file.exists()
+
+        results_2 = sampler.run(
+            likelihood_default, prior_default, rng=rng_default, maxiter=100, checkpoint_file=str(checkpoint_file)
+        )
+
+        assert results_2.niter > results_1.niter
+
+    def test_save_results(
+        self,
+        likelihood_default: likelihood.Likelihood,
+        prior_default: prior.Prior,
+        rng_default: numpy.random.Generator,
+        tmp_path: pathlib.Path,
+    ) -> None:
+        """Test that results are saved to a file."""
+        results_file = tmp_path / "results.hdf5"
+        sampler.run(likelihood_default, prior_default, rng=rng_default, maxiter=100, results_filename=str(results_file))
+
+        assert results_file.exists()
 
 
 class TestBenchmark:
