@@ -26,6 +26,7 @@ _RESULTS_DATASETS: Final = (
     "samples_id",
     "samples_u",
     "samples",
+    "niter",
     "ncall",
     "logz",
     "logzerr",
@@ -138,7 +139,12 @@ def run(
     resume
         Whether to resume the sampler from a previous checkpoint file.
     results_filename
-        The filename where the results will be saved.
+        HDF5 file where the results will be saved.
+
+    Returns
+    -------
+    results
+        Sampling results.
     """
     sampler_kwargs: dict[str, Any] = {
         "nlive": nlive,
@@ -251,12 +257,34 @@ def _log_results_summary(results: dynesty.results.Results, t_elapsed: float) -> 
     )
 
 
-def _save_results(results: dynesty.results.Results, filename: str) -> None:
-    with h5py.File(filename, "w") as f:
+def _save_results(results: dynesty.results.Results, results_filename: str) -> None:
+    with h5py.File(results_filename, "w") as f:
         for name in _RESULTS_DATASETS:
             f.create_dataset(name, data=getattr(results, name))
 
-    logger.info("Saved sampling results to '%s'", filename)
+    logger.info("Saved sampling results to '%s'", results_filename)
+
+
+def read_results(results_filename: str) -> dynesty.results.Results:
+    """
+    Read sampling results from an HDF5 file.
+
+    Parameters
+    ----------
+    results_filename
+        HDF5 file containing the results.
+
+    Returns
+    -------
+    results
+        Sampling results.
+    """
+    results = {}
+    with h5py.File(results_filename, "r") as f:
+        for key in f:
+            results[key] = f[key][()]
+
+    return dynesty.utils.Results(results)
 
 
 def benchmark(

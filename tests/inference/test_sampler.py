@@ -91,6 +91,24 @@ class TestRun:
         assert results_file.exists()
 
 
+class TestReadResults:
+    """Tests for the read_results function."""
+
+    def test_read_results_returns_results(
+        self,
+        likelihood_default: likelihood.Likelihood,
+        prior_default: prior.Prior,
+        rng_default: numpy.random.Generator,
+        tmp_path: pathlib.Path,
+    ) -> None:
+        """Test that read_results returns a results instance."""
+        results_file = tmp_path / "results.hdf5"
+        sampler.run(likelihood_default, prior_default, rng=rng_default, maxiter=100, results_filename=str(results_file))
+        results = sampler.read_results(str(results_file))
+
+        assert isinstance(results, dynesty.results.Results)
+
+
 class TestBenchmark:
     """Tests for the benchmark function."""
 
