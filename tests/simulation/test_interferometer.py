@@ -226,6 +226,21 @@ class TestLHO:
         assert isinstance(lho.s_n, numpy.ndarray)
 
 
+class TestVirgo:
+    """Tests for the Virgo class."""
+
+    def test_initialisation(self, grid_default: grid.Grid) -> None:
+        """Test that Virgo can be initialised."""
+        virgo = interferometer.Virgo(grid_default)
+
+        assert virgo.grid == grid_default
+        assert isinstance(virgo.x, numpy.ndarray)
+        assert isinstance(virgo.d, numpy.ndarray)
+        assert isinstance(virgo.in_bounds_mask, numpy.ndarray)
+        assert isinstance(virgo.f, numpy.ndarray)
+        assert isinstance(virgo.s_n, numpy.ndarray)
+
+
 class TestCalculateInnerProduct:
     """Tests for the calculate_inner_product function."""
 

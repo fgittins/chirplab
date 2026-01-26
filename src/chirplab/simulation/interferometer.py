@@ -19,7 +19,7 @@ D: Final[numpy.typing.NDArray[numpy.float64]] = 1 / 2 * numpy.array([[1, 0, 0], 
 """Default response tensor in the geocentric frame."""
 PWD = Path(__file__).parent
 
-# TODO: add Virgo and KAGRA interferometers
+# TODO: add KAGRA interferometer
 
 
 class Interferometer:
@@ -328,6 +328,42 @@ class LLO(Interferometer):
         super().__init__(grid, PWD / "data/aligo_O4high.txt", 20, 2048, x, d, rng, is_zero_noise)
 
         logger.info("Initialised LIGO Livingston interferometer")
+
+
+class Virgo(Interferometer):
+    """
+    Virgo gravitational-wave interferometer.
+
+    Parameters
+    ----------
+    grid
+        Grid for signal sampling.
+    rng
+        Random number generator for the noise realisation.
+    is_zero_noise
+        Whether to use zero noise realisation.
+
+    Notes
+    -----
+    The location and orientation data are taken from LALSuite [1].
+
+    References
+    ----------
+    [1]  <https://lscsoft.docs.ligo.org/lalsuite/lal/group___create_detector__c.html>.
+    """
+
+    def __init__(self, grid: grid.Grid, rng: None | numpy.random.Generator = None, is_zero_noise: bool = False) -> None:
+        x = numpy.array([4.54637409863e6, 842989.697467, 4.37857696275e6])
+        d = numpy.array(
+            [
+                [0.2438740, -0.0990838, -0.2325762],
+                [-0.0990838, -0.4478258, 0.1878331],
+                [-0.2325762, 0.1878331, 0.2039518],
+            ]
+        )
+        super().__init__(grid, PWD / "data/avirgo_O4high_NEW.txt", 20, 2048, x, d, rng, is_zero_noise)
+
+        logger.info("Initialised Virgo interferometer")
 
 
 def calculate_inner_product(
