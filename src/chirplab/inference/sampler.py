@@ -265,9 +265,9 @@ def _save_results(results: dynesty.results.Results, results_filename: str) -> No
     logger.info("Saved sampling results to '%s'", results_filename)
 
 
-def read_results(results_filename: str) -> dynesty.results.Results:
+def load_results(results_filename: str) -> dynesty.results.Results:
     """
-    Read sampling results from an HDF5 file.
+    Load sampling results from an HDF5 file.
 
     Parameters
     ----------

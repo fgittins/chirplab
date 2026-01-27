@@ -92,19 +92,19 @@ class TestRun:
 
 
 class TestReadResults:
-    """Tests for the read_results function."""
+    """Tests for the load_results function."""
 
-    def test_read_results_returns_results(
+    def test_load_results_returns_results(
         self,
         likelihood_default: likelihood.Likelihood,
         prior_default: prior.Prior,
         rng_default: numpy.random.Generator,
         tmp_path: pathlib.Path,
     ) -> None:
-        """Test that read_results returns a results instance."""
+        """Test that load_results returns a results instance."""
         results_file = tmp_path / "results.hdf5"
         sampler.run(likelihood_default, prior_default, rng=rng_default, maxiter=100, results_filename=str(results_file))
-        results = sampler.read_results(str(results_file))
+        results = sampler.load_results(str(results_file))
 
         assert isinstance(results, dynesty.results.Results)
 
