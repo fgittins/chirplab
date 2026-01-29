@@ -50,6 +50,7 @@ class FirstUpdateDict(TypedDict, total=False):
     min_eff: float
 
 
+# TODO: add tests for multiprocessing cache
 class _Cache:
     calculate_log_likelihood: Callable[Concatenate[numpy.typing.NDArray[numpy.floating], ...], float]
     transform_prior: Callable[
@@ -258,6 +259,8 @@ def run(
     t_2 = time.time()
 
     if is_multiprocessed:
+        logger.info("Closing multiprocessing pool with %d jobs", njobs)
+
         assert pool is not None
         pool.close()
         pool.join()
