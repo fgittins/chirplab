@@ -229,44 +229,38 @@ def run(
     if is_multiprocessed:
         logger.info("Initialising multiprocessing pool with %d jobs", njobs)
 
+        loglikelihood = _cached_calculate_log_likelihood
+        prior_transform = _cached_transform_prior
+        pool = multiprocessing.Pool(njobs, _initialiser, (likelihood.calculate_log_pdf, prior.transform))
+        queue_size = njobs
+    else:
+        loglikelihood = likelihood.calculate_log_pdf
+        prior_transform = prior.transform  # type: ignore[assignment]
+        pool = None
+        queue_size = None
+
     t_1 = time.time()
 
-    if is_multiprocessed:
-        with multiprocessing.Pool(njobs, _initialiser, (likelihood.calculate_log_pdf, prior.transform)) as pool:
-            if is_resumed:
-                assert checkpoint_file is not None
-                sampler = dynesty.NestedSampler.restore(checkpoint_file, pool=pool)
+    if is_resumed:
+        assert checkpoint_file is not None
+        sampler = dynesty.NestedSampler.restore(checkpoint_file, pool=pool)
 
-                logger.info("Resumed nested sampling run from checkpoint file '%s'", checkpoint_file)
-            else:
-                sampler = dynesty.NestedSampler(
-                    _cached_calculate_log_likelihood,
-                    _cached_transform_prior,
-                    prior.n_dim,
-                    pool=pool,
-                    queue_size=njobs,
-                    **sampler_kwargs,
-                )
-
-            logger.info("Starting nested sampling run (multiprocessing mode)")
-
-            sampler.run_nested(**run_kwargs)
+        logger.info("Resumed nested sampling run from checkpoint file '%s'", checkpoint_file)
     else:
-        if is_resumed:
-            assert checkpoint_file is not None
-            sampler = dynesty.NestedSampler.restore(checkpoint_file)
+        sampler = dynesty.NestedSampler(
+            loglikelihood, prior_transform, prior.n_dim, pool=pool, queue_size=queue_size, **sampler_kwargs
+        )
 
-            logger.info("Resumed nested sampling run from checkpoint file '%s'", checkpoint_file)
-        else:
-            sampler = dynesty.NestedSampler(
-                likelihood.calculate_log_pdf, prior.transform, prior.n_dim, **sampler_kwargs
-            )
+    logger.info("Starting nested sampling run (%s mode)", "multiprocessing" if is_multiprocessed else "single-process")
 
-        logger.info("Starting nested sampling run (single-process mode)")
-
-        sampler.run_nested(**run_kwargs)
+    sampler.run_nested(**run_kwargs)
 
     t_2 = time.time()
+
+    if is_multiprocessed:
+        assert pool is not None
+        pool.close()
+        pool.join()
 
     if print_progress:
         print()
