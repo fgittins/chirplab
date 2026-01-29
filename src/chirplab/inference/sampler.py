@@ -1,15 +1,18 @@
 """Module for sampling algorithms."""
 
 import logging
+import multiprocessing
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Concatenate, Final, Literal, TypedDict
 
 import dynesty
 import h5py  # type: ignore[import-untyped]
 import numpy
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
     from dynesty import internal_samplers
 
     from chirplab.inference import likelihood, prior
@@ -45,6 +48,43 @@ class FirstUpdateDict(TypedDict, total=False):
 
     min_ncall: int
     min_eff: float
+
+
+class _Cache:
+    calculate_log_likelihood: Callable[Concatenate[numpy.typing.NDArray[numpy.floating], ...], float]
+    transform_prior: Callable[
+        Concatenate[numpy.typing.NDArray[numpy.floating], ...], numpy.typing.NDArray[numpy.floating]
+    ]
+    calculate_log_likelihood_args: Iterable[Any]
+    transform_prior_args: Iterable[Any]
+    calculate_log_likelihood_kwargs: dict[str, Any]
+    transform_prior_kwargs: dict[str, Any]
+
+
+def _initialiser(
+    calculate_log_likelihood: Callable[..., float],
+    transform_prior: Callable[..., numpy.typing.NDArray[numpy.floating]],
+    calculate_log_likelihood_args: None | Iterable[Any] = None,
+    transform_prior_args: None | Iterable[Any] = None,
+    calculate_log_likelihood_kwargs: None | dict[str, Any] = None,
+    transform_prior_kwargs: None | dict[str, Any] = None,
+) -> None:
+    _Cache.calculate_log_likelihood = calculate_log_likelihood
+    _Cache.transform_prior = transform_prior
+    _Cache.calculate_log_likelihood_args = calculate_log_likelihood_args or ()
+    _Cache.transform_prior_args = transform_prior_args or ()
+    _Cache.calculate_log_likelihood_kwargs = calculate_log_likelihood_kwargs or {}
+    _Cache.transform_prior_kwargs = transform_prior_kwargs or {}
+
+
+def _cached_calculate_log_likelihood(x: numpy.typing.NDArray[numpy.floating]) -> float:
+    return _Cache.calculate_log_likelihood(
+        x, *_Cache.calculate_log_likelihood_args, **_Cache.calculate_log_likelihood_kwargs
+    )
+
+
+def _cached_transform_prior(u: numpy.typing.NDArray[numpy.floating]) -> numpy.typing.NDArray[numpy.floating]:
+    return _Cache.transform_prior(u, *_Cache.transform_prior_args, **_Cache.transform_prior_kwargs)
 
 
 # TODO: adjust printing frequency
@@ -192,7 +232,7 @@ def run(
     t_1 = time.time()
 
     if is_multiprocessed:
-        with dynesty.pool.Pool(njobs, likelihood.calculate_log_pdf, prior.transform) as pool:
+        with multiprocessing.Pool(njobs, _initialiser, (likelihood.calculate_log_pdf, prior.transform)) as pool:
             if is_resumed:
                 assert checkpoint_file is not None
                 sampler = dynesty.NestedSampler.restore(checkpoint_file, pool=pool)
@@ -200,7 +240,12 @@ def run(
                 logger.info("Resumed nested sampling run from checkpoint file '%s'", checkpoint_file)
             else:
                 sampler = dynesty.NestedSampler(
-                    pool.loglike, pool.prior_transform, prior.n_dim, pool=pool, **sampler_kwargs
+                    _cached_calculate_log_likelihood,
+                    _cached_transform_prior,
+                    prior.n_dim,
+                    pool=pool,
+                    queue_size=njobs,
+                    **sampler_kwargs,
                 )
 
             logger.info("Starting nested sampling run (multiprocessing mode)")
