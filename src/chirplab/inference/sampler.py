@@ -4,15 +4,14 @@ import logging
 import multiprocessing
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Concatenate, Final, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import dynesty
-import h5py  # type: ignore[import-untyped]
 import numpy
 
-if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+from chirplab.inference import pool, results
 
+if TYPE_CHECKING:
     from dynesty import internal_samplers
 
     from chirplab.inference import likelihood, prior
@@ -22,26 +21,6 @@ type SampleType = Literal["auto", "unif", "rwalk", "slice", "rslice"] | internal
 
 logger = logging.getLogger(__name__)
 
-_RESULTS_DATASETS: Final = (
-    "logl",
-    "samples_it",
-    "samples_id",
-    "samples_u",
-    "samples",
-    "niter",
-    "ncall",
-    "logz",
-    "logzerr",
-    "logwt",
-    "eff",
-    "nlive",
-    "logvol",
-    "information",
-    "bound_iter",
-    "samples_bound",
-    "scale",
-)
-
 
 class FirstUpdateDict(TypedDict, total=False):
     """Dictionary for first update parameters."""
@@ -50,47 +29,7 @@ class FirstUpdateDict(TypedDict, total=False):
     min_eff: float
 
 
-# TODO: add tests for multiprocessing cache
-class _Cache:
-    calculate_log_likelihood: Callable[Concatenate[numpy.typing.NDArray[numpy.floating], ...], float]
-    transform_prior: Callable[
-        Concatenate[numpy.typing.NDArray[numpy.floating], ...], numpy.typing.NDArray[numpy.floating]
-    ]
-    calculate_log_likelihood_args: Iterable[Any]
-    transform_prior_args: Iterable[Any]
-    calculate_log_likelihood_kwargs: dict[str, Any]
-    transform_prior_kwargs: dict[str, Any]
-
-
-def _initialiser(
-    calculate_log_likelihood: Callable[..., float],
-    transform_prior: Callable[..., numpy.typing.NDArray[numpy.floating]],
-    calculate_log_likelihood_args: None | Iterable[Any] = None,
-    transform_prior_args: None | Iterable[Any] = None,
-    calculate_log_likelihood_kwargs: None | dict[str, Any] = None,
-    transform_prior_kwargs: None | dict[str, Any] = None,
-) -> None:
-    _Cache.calculate_log_likelihood = calculate_log_likelihood
-    _Cache.transform_prior = transform_prior
-    _Cache.calculate_log_likelihood_args = calculate_log_likelihood_args or ()
-    _Cache.transform_prior_args = transform_prior_args or ()
-    _Cache.calculate_log_likelihood_kwargs = calculate_log_likelihood_kwargs or {}
-    _Cache.transform_prior_kwargs = transform_prior_kwargs or {}
-
-
-def _cached_calculate_log_likelihood(x: numpy.typing.NDArray[numpy.floating]) -> float:
-    return _Cache.calculate_log_likelihood(
-        x, *_Cache.calculate_log_likelihood_args, **_Cache.calculate_log_likelihood_kwargs
-    )
-
-
-def _cached_transform_prior(u: numpy.typing.NDArray[numpy.floating]) -> numpy.typing.NDArray[numpy.floating]:
-    return _Cache.transform_prior(u, *_Cache.transform_prior_args, **_Cache.transform_prior_kwargs)
-
-
 # TODO: adjust printing frequency
-
-
 def run(
     likelihood: likelihood.Likelihood,
     prior: prior.Prior,
@@ -230,26 +169,26 @@ def run(
     if is_multiprocessed:
         logger.info("Initialising multiprocessing pool with %d jobs", njobs)
 
-        loglikelihood = _cached_calculate_log_likelihood
-        prior_transform = _cached_transform_prior
-        pool = multiprocessing.Pool(njobs, _initialiser, (likelihood.calculate_log_pdf, prior.transform))
+        loglikelihood = pool._calculate_log_likelihood_wrapper
+        prior_transform = pool._transform_prior_wrapper
+        process_pool = multiprocessing.Pool(njobs, pool._initialiser, (likelihood.calculate_log_pdf, prior.transform))
         queue_size = njobs
     else:
         loglikelihood = likelihood.calculate_log_pdf
-        prior_transform = prior.transform  # type: ignore[assignment]
-        pool = None
+        prior_transform = prior.transform
+        process_pool = None
         queue_size = None
 
     t_1 = time.time()
 
     if is_resumed:
         assert checkpoint_file is not None
-        sampler = dynesty.NestedSampler.restore(checkpoint_file, pool=pool)
+        sampler = dynesty.NestedSampler.restore(checkpoint_file, pool=process_pool)
 
         logger.info("Resumed nested sampling run from checkpoint file '%s'", checkpoint_file)
     else:
         sampler = dynesty.NestedSampler(
-            loglikelihood, prior_transform, prior.n_dim, pool=pool, queue_size=queue_size, **sampler_kwargs
+            loglikelihood, prior_transform, prior.n_dim, pool=process_pool, queue_size=queue_size, **sampler_kwargs
         )
 
     logger.info("Starting nested sampling run (%s mode)", "multiprocessing" if is_multiprocessed else "single-process")
@@ -261,20 +200,20 @@ def run(
     if is_multiprocessed:
         logger.info("Closing multiprocessing pool with %d jobs", njobs)
 
-        assert pool is not None
-        pool.close()
-        pool.join()
+        assert process_pool is not None
+        process_pool.close()
+        process_pool.join()
 
     if print_progress:
         print()
 
-    results = sampler.results
-    _log_results_summary(results, t_2 - t_1)
+    run_results = sampler.results
+    _log_results_summary(run_results, t_2 - t_1)
 
     if results_filename is not None:
-        _save_results(results, results_filename)
+        results._save(run_results, results_filename)
 
-    return results
+    return run_results
 
 
 def _log_run_parameters(likelihood: likelihood.Likelihood, prior: prior.Prior, **kwargs: object) -> None:
@@ -295,36 +234,6 @@ def _log_results_summary(results: dynesty.results.Results, t_elapsed: float) -> 
         results.logz[-1],
         results.logzerr[-1],
     )
-
-
-def _save_results(results: dynesty.results.Results, results_filename: str) -> None:
-    with h5py.File(results_filename, "w") as f:
-        for name in _RESULTS_DATASETS:
-            f.create_dataset(name, data=getattr(results, name))
-
-    logger.info("Saved sampling results to '%s'", results_filename)
-
-
-def load_results(results_filename: str) -> dynesty.results.Results:
-    """
-    Load sampling results from an HDF5 file.
-
-    Parameters
-    ----------
-    results_filename
-        HDF5 file containing the results.
-
-    Returns
-    -------
-    results
-        Sampling results.
-    """
-    results = {}
-    with h5py.File(results_filename, "r") as f:
-        for key in f:
-            results[key] = f[key][()]
-
-    return dynesty.utils.Results(results)
 
 
 def benchmark(

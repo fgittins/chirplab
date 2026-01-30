@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 import numpy
 import pytest
 
-from chirplab.inference import likelihood
+from chirplab import constants
+from chirplab.inference import distribution, likelihood, prior
 from chirplab.simulation import interferometer, parameters
 
 if TYPE_CHECKING:
@@ -37,4 +38,22 @@ def likelihood_default(
     """Return default likelihood object for testing."""
     return likelihood.GravitationalWaveLikelihood(
         (injected_interferometer_default,), model_default, vector_to_parameters
+    )
+
+
+@pytest.fixture(scope="class")
+def prior_default() -> prior.Prior:
+    """Return default prior for testing."""
+    return prior.Prior(
+        (
+            distribution.Uniform(20 * constants.M_SUN, 40 * constants.M_SUN),
+            distribution.Uniform(20 * constants.M_SUN, 40 * constants.M_SUN),
+            distribution.Uniform(400e6 * constants.PC, 600e6 * constants.PC),
+            distribution.Sine(),
+            distribution.Uniform(99, 101),
+            distribution.Uniform(0, 2 * constants.PI, boundary="periodic"),
+            distribution.Sine(),
+            distribution.Uniform(0, 2 * constants.PI, boundary="periodic"),
+            distribution.Uniform(0, constants.PI),
+        )
     )
