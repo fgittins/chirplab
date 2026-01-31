@@ -70,7 +70,7 @@ lint.pydocstyle.convention = "numpy"
 
 [tool.mypy]
 # Import discovery
-mypy_path = "typings"
+mypy_path = ["src", "typings"]
 # Disallow dynamic typing
 disallow_any_generics = true
 disallow_subclassing_any = true

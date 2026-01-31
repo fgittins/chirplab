@@ -44,6 +44,38 @@ class TestRun:
             likelihood_default,
             prior_default,
             rng=rng_default,
+            njobs=2,
+            maxiter=50,
+            add_live=False,
+            checkpoint_file=str(checkpoint_file),
+        )
+
+        assert checkpoint_file.exists()
+
+        results_2 = sampler.run(
+            likelihood_default,
+            prior_default,
+            rng=rng_default,
+            njobs=2,
+            maxiter=100,
+            checkpoint_file=str(checkpoint_file),
+        )
+
+        assert results_2.niter > results_1.niter
+
+    def test_resume_with_multiprocessing(
+        self,
+        likelihood_default: likelihood.Likelihood,
+        prior_default: prior.Prior,
+        rng_default: numpy.random.Generator,
+        tmp_path: pathlib.Path,
+    ) -> None:
+        """Test that resuming with multiprocessing from a checkpoint works."""
+        checkpoint_file = tmp_path / "checkpoint.save"
+        results_1 = sampler.run(
+            likelihood_default,
+            prior_default,
+            rng=rng_default,
             maxiter=50,
             add_live=False,
             checkpoint_file=str(checkpoint_file),
