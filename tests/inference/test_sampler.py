@@ -68,7 +68,7 @@ class TestRun:
         likelihood_default: likelihood.Likelihood,
         prior_default: prior.Prior,
         rng_default: numpy.random.Generator,
-        tmp_path: pathlib.Path,
+        tmp_path: Path,
     ) -> None:
         """Test that resuming with multiprocessing from a checkpoint works."""
         checkpoint_file = tmp_path / "checkpoint.save"
