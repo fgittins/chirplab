@@ -20,7 +20,7 @@ jobs:
           version: "0.9.28"
 
       - name: Install the project
-        run: uv sync --locked --all-extras --dev
+        run: uv sync
   
       - name: Run type check
         run: uv run mypy chirplab tests
