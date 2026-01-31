@@ -18,9 +18,10 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           version: "0.9.28"
+          enable-cache: true
 
       - name: Install the project
         run: uv sync
   
       - name: Run type check
-        run: uv run mypy chirplab tests
+        run: uv run mypy src tests
