@@ -1,1 +1,1 @@
-"""sampler: sampling algorithms."""
+"""sampler: Sampling algorithms."""
