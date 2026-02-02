@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Result:
     """
     Sampling result.
@@ -26,23 +26,23 @@ class Result:
     logl
         Log-likelihood.
     samples_it
-        The sampling iteration when the sample was proposed.
+        Sampling iteration when the sample was proposed.
     samples_id
-        The unique ID of the sample.
+        Unique ID of the sample.
     samples_u
-        The coordinates of live points in the unit cube coordinate system.
+        Coordinates of live points in the unit cube coordinate system.
     samples
-        The location (in original coordinates).
+        Location (in original coordinates).
     niter
         Number of iterations.
     ncall
         Total number of likelihood calls.
     logz
-        Array of cumulative log(Z) integrals.
+        Cumulative log-evidence.
     logzerr
-        Array of uncertainty of log(Z).
+        Uncertainty of log-evidence.
     logwt
-        Array of log-posterior weights.
+        Log-posterior weights.
     eff
         Sampling efficiency.
     nlive
@@ -54,7 +54,7 @@ class Result:
     bound_iter
         Index of the bound being used for an iteration that generated the point.
     samples_bound
-        The index of the bound that the corresponding sample was drawn from.
+        Index of the bound that the corresponding sample was drawn from.
     scale
         Scalar scale applied for proposals.
     """
@@ -87,8 +87,8 @@ class Result:
             HDF5 file to save the result to.
         """
         with h5py.File(results_filename, "w") as f:
-            for name, value in self.__dict__.items():
-                f.create_dataset(name, data=value)
+            for name in self.__slots__:
+                f.create_dataset(name, data=getattr(self, name))
 
         logger.info("Saved sampling results to '%s'", results_filename)
 
