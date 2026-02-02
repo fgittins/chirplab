@@ -71,7 +71,7 @@ class Dynesty(base.Sampler):
     enlarge
         Enlarge the volumes of the specified bounding object(s) by this fraction.
     bootstrap
-        Compute this many bootstrapped realizations of the bounding objects.
+        Compute this many bootstrapped realisations of the bounding objects.
     walks
         For the `"rwalk"` sampling option, the minimum number of steps before proposing a new live point.
     facc
@@ -316,7 +316,7 @@ def run_sampler(
     enlarge
         Enlarge the volumes of the specified bounding object(s) by this fraction.
     bootstrap
-        Compute this many bootstrapped realizations of the bounding objects.
+        Compute this many bootstrapped realisations of the bounding objects.
     walks
         For the `"rwalk"` sampling option, the minimum number of steps before proposing a new live point.
     facc
