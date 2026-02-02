@@ -209,6 +209,20 @@ class Dynesty(base.Sampler):
         result
             Sampling result.
         """
+        logger.info(
+            "Starting nested sampling run with maxiter=%s, maxcall=%s, dlogz=%s, logl_max=%s, add_live=%s, print_progress=%s, save_bounds=%s, checkpoint_file=%s, checkpoint_every=%s, resume=%s",
+            maxiter,
+            maxcall,
+            dlogz,
+            logl_max,
+            add_live,
+            print_progress,
+            save_bounds,
+            checkpoint_file,
+            checkpoint_every,
+            resume,
+        )
+
         t_1 = time.time()
 
         self.sampler.run_nested(
@@ -354,6 +368,8 @@ def run_sampler(
     is_multiprocessed = njobs > 1
     is_resumed = checkpoint_file is not None and Path(checkpoint_file).exists()
 
+    logger.info("Initialising multiprocessing pool with %d jobs", njobs)
+
     pool = multiprocessing.Pool(njobs) if is_multiprocessed else None
 
     if is_resumed:
@@ -394,6 +410,8 @@ def run_sampler(
     )
 
     if is_multiprocessed:
+        logger.info("Closing multiprocessing pool with %d jobs", njobs)
+
         assert pool is not None
         pool.close()
         pool.join()
