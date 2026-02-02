@@ -351,11 +351,14 @@ def run_sampler(
     result
         Sampling result.
     """
-    pool = multiprocessing.Pool(njobs) if njobs > 1 else None
+    is_multiprocessed = njobs > 1
+    is_resumed = checkpoint_file is not None and Path(checkpoint_file).exists()
 
-    if checkpoint_file is not None and Path(checkpoint_file).exists():
+    pool = multiprocessing.Pool(njobs) if is_multiprocessed else None
+
+    if is_resumed:
+        assert checkpoint_file is not None
         sampler = Dynesty.restore(checkpoint_file, pool=pool)
-        is_resumed = True
     else:
         sampler = Dynesty(
             likelihood,
@@ -376,7 +379,6 @@ def run_sampler(
             slices,
             ncdim,
         )
-        is_resumed = False
 
     sampler.run(
         maxiter,
@@ -390,6 +392,11 @@ def run_sampler(
         checkpoint_every,
         is_resumed,
     )
+
+    if is_multiprocessed:
+        assert pool is not None
+        pool.close()
+        pool.join()
 
     assert sampler.result is not None
     return sampler.result
