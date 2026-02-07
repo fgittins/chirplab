@@ -7,13 +7,19 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
 
+# Dependency management
+.python-version
+*.lock
+
+# Development tools
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
 .vscode/
-
 .coverage
-.python-version
-*.lock
+
+# Miscellaneous
+scripts/
+*.png
