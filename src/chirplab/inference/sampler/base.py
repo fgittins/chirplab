@@ -4,7 +4,7 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 
 import h5py  # type: ignore[import-untyped]
 
@@ -142,15 +142,8 @@ class Sampler(ABC):
         self.result: None | Result = None
 
     @abstractmethod
-    def run(self) -> None:
-        """
-        Run the sampler.
-
-        Returns
-        -------
-        result
-            Sampling result.
-        """
+    def run(self, *args: Any, **kwargs: Any) -> None:
+        """Run the sampler."""
         ...
 
 

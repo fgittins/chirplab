@@ -203,11 +203,6 @@ class Dynesty(base.Sampler):
             The number of seconds between checkpoints that will save the internal state of the sampler.
         resume
             Whether to resume the sampler from a previous checkpoint file.
-
-        Returns
-        -------
-        result
-            Sampling result.
         """
         logger.info(
             "Starting nested sampling run with maxiter=%s, maxcall=%s, dlogz=%s, logl_max=%s, add_live=%s, print_progress=%s, save_bounds=%s, checkpoint_file=%s, checkpoint_every=%s, resume=%s",
