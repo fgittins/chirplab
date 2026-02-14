@@ -248,23 +248,7 @@ class Dynesty(base.Sampler):
         )
 
         self.result = base.Result(
-            logl=results.logl,
-            samples_it=results.samples_it,
-            samples_id=results.samples_id,
-            samples_u=results.samples_u,
-            samples=results.samples,
-            niter=results.niter,
-            ncall=results.ncall,
-            logz=results.logz,
-            logzerr=results.logzerr,
-            logwt=results.logwt,
-            eff=results.eff,
-            nlive=results.nlive,
-            logvol=results.logvol,
-            information=results.information,
-            bound_iter=results.bound_iter,
-            samples_bound=results.samples_bound,
-            scale=results.scale,
+            results.samples, results.importance_weights(), results.logl, results.logz[-1], results.logzerr[-1]
         )
 
 

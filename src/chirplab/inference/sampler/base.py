@@ -23,59 +23,23 @@ class Result:
 
     Parameters
     ----------
-    logl
-        Log-likelihood.
-    samples_it
-        Sampling iteration when the sample was proposed.
-    samples_id
-        Unique ID of the sample.
-    samples_u
-        Coordinates of live points in the unit cube coordinate system.
-    samples
-        Location (in original coordinates).
-    niter
-        Number of iterations.
-    ncall
-        Total number of likelihood calls.
-    logz
-        Cumulative log-evidence.
-    logzerr
-        Uncertainty of log-evidence.
-    logwt
-        Log-posterior weights.
-    eff
-        Sampling efficiency.
-    nlive
-        Number of live points for a static run.
-    logvol
-        Log-volumes of dead points.
-    information
-        Information integral.
-    bound_iter
-        Index of the bound being used for an iteration that generated the point.
-    samples_bound
-        Index of the bound that the corresponding sample was drawn from.
-    scale
-        Scalar scale applied for proposals.
+    x
+        Samples.
+    w
+        Sample weights.
+    ln_l
+        Log-likelihoods of the samples.
+    ln_z
+        Log-evidence.
+    delta_ln_z
+        Uncertainty of the log-evidence.
     """
 
-    logl: numpy.typing.NDArray[numpy.floating]
-    samples_it: numpy.typing.NDArray[numpy.integer]
-    samples_id: numpy.typing.NDArray[numpy.integer]
-    samples_u: numpy.typing.NDArray[numpy.floating]
-    samples: numpy.typing.NDArray[numpy.floating]
-    niter: int
-    ncall: numpy.typing.NDArray[numpy.integer]
-    logz: numpy.typing.NDArray[numpy.floating]
-    logzerr: numpy.typing.NDArray[numpy.floating]
-    logwt: numpy.typing.NDArray[numpy.floating]
-    eff: float
-    nlive: int
-    logvol: numpy.typing.NDArray[numpy.floating]
-    information: numpy.typing.NDArray[numpy.floating]
-    bound_iter: numpy.typing.NDArray[numpy.integer]
-    samples_bound: numpy.typing.NDArray[numpy.integer]
-    scale: numpy.typing.NDArray[numpy.floating]
+    x: numpy.typing.NDArray[numpy.floating]
+    w: numpy.typing.NDArray[numpy.floating]
+    ln_l: numpy.typing.NDArray[numpy.floating]
+    ln_z: float
+    delta_ln_z: float
 
     def save(self, results_filename: str) -> None:
         """
@@ -88,7 +52,9 @@ class Result:
         """
         with h5py.File(results_filename, "w") as f:
             for name in self.__slots__:
-                f.create_dataset(name, data=getattr(self, name))
+                value = getattr(self, name)
+                if value is not None:
+                    f.create_dataset(name, data=value)
 
         logger.info("Saved sampling results to '%s'", results_filename)
 
