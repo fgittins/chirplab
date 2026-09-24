@@ -22,7 +22,7 @@ class TestWaveformParameters:
 
         assert theta.m_1 == 30 * constants.M_SUN
         assert theta.m_2 == 30 * constants.M_SUN
-        assert theta.r == 500e6 * constants.PC
+        assert theta.d_l == 500e6 * constants.PC
         assert theta.iota == constants.PI / 3
         assert theta.t_c == 100
         assert theta.phi_c == 1.5
@@ -54,7 +54,7 @@ class TestSignalParameters:
 
         assert theta.m_1 == 30 * constants.M_SUN
         assert theta.m_2 == 30 * constants.M_SUN
-        assert theta.r == 500e6 * constants.PC
+        assert theta.d_l == 500e6 * constants.PC
         assert theta.iota == constants.PI / 3
         assert theta.t_c == 100
         assert theta.phi_c == 1.5

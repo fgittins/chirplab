@@ -114,7 +114,7 @@ class NewtonianWaveformModel(WaveformModel):
         a = (
             (5 / 24) ** (1 / 2)
             * (1 / constants.PI ** (2 / 3))
-            * (constants.C / theta.r)
+            * (constants.C / theta.d_l)
             * t_chirp ** (5 / 6)
             * (1 / f_valid ** (7 / 6))
         )

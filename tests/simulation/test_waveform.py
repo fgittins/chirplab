@@ -137,7 +137,7 @@ class TestNewtonianWaveformModel:
         """Test that amplitude scales inversely with distance."""
         ratio = 2
         theta_near = theta_waveform_default
-        theta_far = replace(theta_waveform_default, r=ratio * theta_near.r)
+        theta_far = replace(theta_waveform_default, d_l=ratio * theta_near.d_l)
         h_tilde_plus_near, _ = model_default.calculate_strain_polarisations(f_default, theta_near)
         h_tilde_plus_far, _ = model_default.calculate_strain_polarisations(f_default, theta_far)
 

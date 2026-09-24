@@ -19,10 +19,10 @@ class WaveformParameters:
     Parameters
     ----------
     m_1
-        Mass of the first component in the binary (kg).
+        Mass of the first component in the binary, in the detector frame (kg).
     m_2
-        Mass of the second component in the binary (kg).
-    r
+        Mass of the second component in the binary, in the detector frame (kg).
+    d_l
         Luminosity distance to the binary (m).
     iota
         Inclination angle of the binary (rad).
@@ -34,7 +34,7 @@ class WaveformParameters:
 
     m_1: float
     m_2: float
-    r: float
+    d_l: float
     iota: float
     t_c: float
     phi_c: float
@@ -61,10 +61,10 @@ class SignalParameters(WaveformParameters):
     Parameters
     ----------
     m_1
-        Mass of the first component in the binary (kg).
+        Mass of the first component in the binary, in the detector frame (kg).
     m_2
-        Mass of the second component in the binary (kg).
-    r
+        Mass of the second component in the binary, in the detector frame (kg).
+    d_l
         Luminosity distance to the binary (m).
     iota
         Inclination angle of the binary (rad).

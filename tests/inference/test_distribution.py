@@ -260,18 +260,18 @@ class TestUniformComovingVolume:
 
     def test_initialisation(self) -> None:
         """Test UniformComovingVolume distribution initialisation."""
-        r_min, r_max = 1e6 * constants.PC, 1e9 * constants.PC
-        p = distribution.UniformComovingVolume(r_min, r_max)
+        d_l_min, d_l_max = 1e6 * constants.PC, 1e9 * constants.PC
+        p = distribution.UniformComovingVolume(d_l_min, d_l_max)
 
-        assert p.r_min == r_min
-        assert p.r_max == r_max
+        assert p.d_l_min == d_l_min
+        assert p.d_l_max == d_l_max
         assert p.is_periodic is False
         assert p.is_reflective is False
 
     def test_calculate_ppf_boundaries(self) -> None:
         """Test that calculate_ppf returns correct boundary values."""
-        r_min, r_max = 1e6 * constants.PC, 1e9 * constants.PC
-        p = distribution.UniformComovingVolume(r_min, r_max)
+        d_l_min, d_l_max = 1e6 * constants.PC, 1e9 * constants.PC
+        p = distribution.UniformComovingVolume(d_l_min, d_l_max)
 
-        assert numpy.isclose(p.calculate_ppf(0), r_min)
-        assert numpy.isclose(p.calculate_ppf(1), r_max)
+        assert numpy.isclose(p.calculate_ppf(0), d_l_min)
+        assert numpy.isclose(p.calculate_ppf(1), d_l_max)

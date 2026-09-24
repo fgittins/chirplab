@@ -263,9 +263,9 @@ class UniformComovingVolume(Distribution):
 
     Parameters
     ----------
-    r_min
+    d_l_min
         Minimum luminosity distance (m).
-    r_max
+    d_l_max
         Maximum luminosity distance (m).
     boundary
         Boundary condition for the probability distribution.
@@ -279,26 +279,26 @@ class UniformComovingVolume(Distribution):
     [1]  <https://docs.astropy.org/en/stable/cosmology/realizations.html>.
     """
 
-    def __init__(self, r_min: float, r_max: float, boundary: BoundaryType = None) -> None:
+    def __init__(self, d_l_min: float, d_l_max: float, boundary: BoundaryType = None) -> None:
         super().__init__(boundary)
-        self.r_min = r_min
-        self.r_max = r_max
+        self.d_l_min = d_l_min
+        self.d_l_max = d_l_max
 
         cosmo = cosmology.Planck18
-        z_min = cosmology.z_at_value(cosmo.luminosity_distance, r_min * units.m).value
-        z_max = cosmology.z_at_value(cosmo.luminosity_distance, r_max * units.m).value
+        z_min = cosmology.z_at_value(cosmo.luminosity_distance, d_l_min * units.m).value
+        z_max = cosmology.z_at_value(cosmo.luminosity_distance, d_l_max * units.m).value
 
         z_array = numpy.linspace(z_min, z_max, 1_000)
         pdf_array = cosmo.differential_comoving_volume(z_array).value
 
-        r_array = cosmo.luminosity_distance(z_array).value * 1e6 * constants.PC
-        dr_dz_array = numpy.gradient(r_array, z_array)
-        pdf_array /= dr_dz_array
+        d_l_array = cosmo.luminosity_distance(z_array).value * 1e6 * constants.PC
+        dd_l_dz_array = numpy.gradient(d_l_array, z_array)
+        pdf_array /= dd_l_dz_array
 
-        pdf_array /= numpy.trapezoid(pdf_array, r_array)
-        cdf_array = integrate.cumulative_trapezoid(pdf_array, r_array, initial=0)
+        pdf_array /= numpy.trapezoid(pdf_array, d_l_array)
+        cdf_array = integrate.cumulative_trapezoid(pdf_array, d_l_array, initial=0)
 
-        self.ppf_function = interpolate.CubicSpline(cdf_array, r_array)
+        self.ppf_function = interpolate.CubicSpline(cdf_array, d_l_array)
 
     def calculate_ppf(self, q: float) -> float:
         """
