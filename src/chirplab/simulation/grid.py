@@ -120,7 +120,7 @@ class Grid:
         y_tilde
             Frequency-domain signal (Hz^-1).
         """
-        return numpy.fft.rfft(y) * self.delta_t
+        return numpy.fft.rfft(numpy.asarray(y, dtype=numpy.float64)) * self.delta_t
 
     def calculate_inverse_fourier_transform(
         self, y_tilde: numpy.typing.NDArray[numpy.complexfloating]
@@ -138,4 +138,4 @@ class Grid:
         y
             Time-domain signal.
         """
-        return numpy.fft.irfft(y_tilde) / self.delta_t
+        return numpy.fft.irfft(numpy.asarray(y_tilde, dtype=numpy.complex128)) / self.delta_t
