@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Self
 
-import h5py  # type: ignore[import-untyped]
+import h5py
 
 if TYPE_CHECKING:
     import numpy
