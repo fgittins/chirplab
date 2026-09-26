@@ -1,7 +1,11 @@
 """Tests for the dynesty module."""
 
+import multiprocessing
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest import mock
+
+import pytest
 
 from chirplab.inference.sampler import base, dynesty
 
@@ -163,3 +167,30 @@ class TestRunSampler:
         )
 
         assert isinstance(result, base.Result)
+
+    def test_run_sampler_without_result(
+        self, likelihood_default: likelihood.Likelihood, prior_default: prior.Prior, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that run_sampler reports a sampler that produced no result."""
+        sampler = mock.Mock(result=None)
+        monkeypatch.setattr(dynesty, "Dynesty", mock.Mock(return_value=sampler))
+
+        with pytest.raises(RuntimeError, match="completed without producing a result"):
+            dynesty.run_sampler(likelihood_default, prior_default)
+
+    def test_run_sampler_terminates_pool_on_error(
+        self, likelihood_default: likelihood.Likelihood, prior_default: prior.Prior, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that a sampling error terminates and closes the multiprocessing pool."""
+        pool = mock.Mock()
+        sampler = mock.Mock()
+        sampler.run.side_effect = ValueError("sampling failed")
+        monkeypatch.setattr(multiprocessing, "Pool", mock.Mock(return_value=pool))
+        monkeypatch.setattr(dynesty, "Dynesty", mock.Mock(return_value=sampler))
+
+        with pytest.raises(ValueError, match="sampling failed"):
+            dynesty.run_sampler(likelihood_default, prior_default, njobs=2)
+
+        pool.terminate.assert_called_once_with()
+        pool.close.assert_called_once_with()
+        pool.join.assert_called_once_with()

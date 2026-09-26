@@ -347,18 +347,16 @@ def run_sampler(
         Sampling result.
     """
     is_multiprocessed = njobs > 1
-    is_resumed = checkpoint_file is not None and Path(checkpoint_file).exists()
+    resume_checkpoint = checkpoint_file if checkpoint_file is not None and Path(checkpoint_file).exists() else None
+    is_resumed = resume_checkpoint is not None
 
     logger.info("Initialising multiprocessing pool with %d jobs", njobs)
 
     pool = multiprocessing.Pool(njobs) if is_multiprocessed else None
 
     try:
-        if is_resumed:
-            if checkpoint_file is None:
-                msg = "A checkpoint file is required when resuming a sampler."
-                raise RuntimeError(msg)
-            sampler = Dynesty.restore(checkpoint_file, pool)
+        if resume_checkpoint is not None:
+            sampler = Dynesty.restore(resume_checkpoint, pool)
         else:
             sampler = Dynesty(
                 likelihood,
