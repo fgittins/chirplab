@@ -60,6 +60,19 @@ class TestInterferometer:
         assert numpy.allclose(ifo.s_tilde, 0, RTOL, ATOL)
         assert numpy.allclose(ifo.s, 0, RTOL, ATOL)
 
+    def test_power_spectral_density_is_infinite_outside_tabulated_frequency_range(
+        self, grid_default: grid.Grid, tmp_path: Path
+    ) -> None:
+        """Test that frequencies outside the power spectral density table are excluded from the likelihood."""
+        power_spectral_density_file = tmp_path / "psd.txt"
+        numpy.savetxt(power_spectral_density_file, numpy.array([[1.0, 2.0], [2.0, 2.0]]))
+
+        ifo = interferometer.Interferometer(grid_default, power_spectral_density_file)
+
+        assert numpy.all(numpy.isinf(ifo.s_n[ifo.f < 1]))
+        assert numpy.all(numpy.isfinite(ifo.s_n[(ifo.f >= 1) & (ifo.f <= 2)]))
+        assert numpy.all(numpy.isinf(ifo.s_n[ifo.f > 2]))
+
     def test_noise_generation_with_rng(
         self,
         grid_default: grid.Grid,
@@ -296,7 +309,7 @@ class TestCalculateInnerProduct:
         b_tilde = numpy.ones(n // 2, dtype=numpy.float64) * (1 + 1j)
         delta_f = 1 / 4
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError, match="Input arrays must have the same size"):
             interferometer.calculate_inner_product(a_tilde, b_tilde, s_n_default, delta_f)
 
 

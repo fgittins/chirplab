@@ -63,9 +63,9 @@ class Interferometer:
 
         self.f = grid.f
         self.t = grid.t
-        self.in_bounds_mask = (f_min <= self.f) & (self.f <= f_max)
 
         f, amplitude_spectral_density = numpy.loadtxt(amplitude_spectral_density_file, numpy.float64, unpack=True)
+        self.in_bounds_mask = (f_min <= self.f) & (self.f <= f_max) & (f[0] <= self.f) & (self.f <= f[-1])
         self.s_n = numpy.interp(self.f, f, amplitude_spectral_density**2)
         self.s_n[~self.in_bounds_mask] = constants.INF
 
@@ -391,7 +391,9 @@ def calculate_inner_product(
     a_inner_b
         Inner product.
     """
-    assert a_tilde.size == b_tilde.size == s_n.size, "Input arrays must have the same size."
+    if not a_tilde.size == b_tilde.size == s_n.size:
+        msg = "Input arrays must have the same size."
+        raise ValueError(msg)
     integrand = a_tilde.conj() * b_tilde / s_n
     integral = numpy.sum(integrand, dtype=numpy.complex128) * delta_f
     return 4 * integral

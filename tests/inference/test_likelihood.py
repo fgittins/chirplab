@@ -47,6 +47,19 @@ def injected_interferometer_zero_noise_default(
 class TestGravitationalWaveLikelihood:
     """Tests for the GravitationalWaveLikelihood class."""
 
+    def test_initialisation_accepts_one_shot_interferometer_iterable(
+        self, model_default: waveform.WaveformModel, injected_interferometer_default: interferometer.Interferometer
+    ) -> None:
+        """Test that a generator of interferometers remains usable after initialisation."""
+        like = likelihood.GravitationalWaveLikelihood(
+            (interferometer for interferometer in (injected_interferometer_default,)),
+            model_default,
+            vector_to_parameters,
+        )
+
+        assert like.interferometers == (injected_interferometer_default,)
+        assert len(like.s_inner_s) == 1
+
     def test_initialisation(
         self, model_default: waveform.WaveformModel, injected_interferometer_default: interferometer.Interferometer
     ) -> None:

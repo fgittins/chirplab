@@ -3,6 +3,7 @@
 import numpy
 import pytest
 
+from chirplab import constants
 from chirplab.simulation import grid
 
 
@@ -20,6 +21,18 @@ class TestGrid:
         """Test that Grid raises ValueError when t_d * f_s is not an integer."""
         with pytest.raises(ValueError, match="The product of t_d and f_s must be an integer"):
             grid.Grid(4.1, 4096)
+
+    @pytest.mark.parametrize(("t_d", "f_s"), [(0, 4096), (4, 0), (-1, 4096), (4, -4096)])
+    def test_invalid_non_positive_parameters(self, t_d: float, f_s: float) -> None:
+        """Test that Grid rejects non-positive duration and sampling frequency."""
+        with pytest.raises(ValueError, match="t_d and f_s must be finite and positive"):
+            grid.Grid(t_d, f_s)
+
+    @pytest.mark.parametrize(("t_d", "f_s"), [(constants.INF, 4096), (4, constants.INF), (numpy.nan, 4096)])
+    def test_invalid_non_finite_parameters(self, t_d: float, f_s: float) -> None:
+        """Test that Grid rejects non-finite duration and sampling frequency."""
+        with pytest.raises(ValueError, match="t_d and f_s must be finite and positive"):
+            grid.Grid(t_d, f_s)
 
     def test_invalid_odd_n(self) -> None:
         """Test that Grid raises ValueError when n is odd."""

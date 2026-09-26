@@ -156,9 +156,11 @@ class Dynesty(base.Sampler):
         ----------
         checkpoint_file
             Checkpoint file.
+        pool
+            Pool of workers.
         """
         obj = cls.__new__(cls)
-        obj.sampler = dynesty.NestedSampler.restore(checkpoint_file, pool=pool)
+        obj.sampler = dynesty.NestedSampler.restore(checkpoint_file, pool)
 
         logger.info("Resumed nested sampling run from checkpoint file '%s'", checkpoint_file)
 
@@ -351,49 +353,56 @@ def run_sampler(
 
     pool = multiprocessing.Pool(njobs) if is_multiprocessed else None
 
-    if is_resumed:
-        assert checkpoint_file is not None
-        sampler = Dynesty.restore(checkpoint_file, pool=pool)
-    else:
-        sampler = Dynesty(
-            likelihood,
-            prior,
-            nlive,
-            bound,
-            sample,
-            update_interval,
-            first_update,
-            rng,
-            njobs,
-            pool,
-            use_pool,
-            enlarge,
-            bootstrap,
-            walks,
-            facc,
-            slices,
-            ncdim,
+    try:
+        if is_resumed:
+            if checkpoint_file is None:
+                msg = "A checkpoint file is required when resuming a sampler."
+                raise RuntimeError(msg)
+            sampler = Dynesty.restore(checkpoint_file, pool)
+        else:
+            sampler = Dynesty(
+                likelihood,
+                prior,
+                nlive,
+                bound,
+                sample,
+                update_interval,
+                first_update,
+                rng,
+                njobs,
+                pool,
+                use_pool,
+                enlarge,
+                bootstrap,
+                walks,
+                facc,
+                slices,
+                ncdim,
+            )
+
+        sampler.run(
+            maxiter,
+            maxcall,
+            dlogz,
+            logl_max,
+            add_live,
+            print_progress,
+            save_bounds,
+            checkpoint_file,
+            checkpoint_every,
+            is_resumed,
         )
 
-    sampler.run(
-        maxiter,
-        maxcall,
-        dlogz,
-        logl_max,
-        add_live,
-        print_progress,
-        save_bounds,
-        checkpoint_file,
-        checkpoint_every,
-        is_resumed,
-    )
-
-    if is_multiprocessed:
-        logger.info("Closing multiprocessing pool with %d jobs", njobs)
-
-        assert pool is not None
-        pool.close()
-        pool.join()
-
-    assert sampler.result is not None
-    return sampler.result
+        if sampler.result is None:
+            msg = "The sampler completed without producing a result."
+            raise RuntimeError(msg)
+        return sampler.result
+    except BaseException:
+        if pool is not None:
+            pool.terminate()
+        raise
+    finally:
+        if pool is not None:
+            logger.info("Closing multiprocessing pool with %d jobs", njobs)
+            pool.close()
+            pool.join()

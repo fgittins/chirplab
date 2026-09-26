@@ -60,13 +60,13 @@ class GravitationalWaveLikelihood(Likelihood):
         vector_to_parameters: Callable[[numpy.typing.NDArray[numpy.floating]], parameters.SignalParameters],
         is_normalised: bool = False,
     ) -> None:
-        self.interferometers = interferometers
+        self.interferometers = tuple(interferometers)
         self.model = model
         self.vector_to_parameters = vector_to_parameters
 
         self.ln_n = numpy.float64(0)
         self.s_inner_s: list[numpy.float64] = []
-        for interferometer in interferometers:
+        for interferometer in self.interferometers:
             if is_normalised:
                 self.ln_n += numpy.sum(
                     numpy.log(
@@ -82,7 +82,7 @@ class GravitationalWaveLikelihood(Likelihood):
 
         logger.info(
             "Initialised GravitationalWaveLikelihood: interferometers=%s, model=%s, vector_to_parameters=%s, is_normalised=%s",
-            interferometers,
+            self.interferometers,
             model,
             vector_to_parameters,
             is_normalised,

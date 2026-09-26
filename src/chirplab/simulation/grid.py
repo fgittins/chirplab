@@ -26,6 +26,11 @@ class Grid:
 
     def __post_init__(self) -> None:
         """Validate parameters after initialisation."""
+        if not (numpy.isfinite(self.t_d) and numpy.isfinite(self.f_s)) or self.t_d <= 0 or self.f_s <= 0:
+            msg = "t_d and f_s must be finite and positive."
+            logger.error(msg)
+            raise ValueError(msg)
+
         if not (self.t_d * self.f_s).is_integer():
             msg = "The product of t_d and f_s must be an integer."
             logger.error(msg)
